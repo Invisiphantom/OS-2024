@@ -15,15 +15,18 @@ static short sz[4][10000];
 #define FAIL(...)            \
     {                        \
         printk(__VA_ARGS__); \
-        while (1);           \
+        while (1)            \
+            ;                \
     }
-#define SYNC(i)              \
-    arch_dsb_sy();           \
-    increment_rc(&x);        \
-    while (x.count < 4 * i); \
+#define SYNC(i)             \
+    arch_dsb_sy();          \
+    increment_rc(&x);       \
+    while (x.count < 4 * i) \
+        ;                   \
     arch_dsb_sy();
 
-void kalloc_test() {
+void kalloc_test()
+{
     int i = cpuid();
     int r = kalloc_page_cnt.count;
     int y = 10000 - i * 500;
@@ -51,18 +54,18 @@ void kalloc_test() {
         if (j < 1000 || rand() > RAND_MAX / 16 * 7) {
             int z = 0;
             int r = rand() & 255;
-            if (r < 127) {  // [17,64]
+            if (r < 127) { // [17,64]
                 z = rand() % 48 + 17;
                 z = round_up((u64)z, 4ll);
-            } else if (r < 181) {  // [1,16]
+            } else if (r < 181) { // [1,16]
                 z = rand() % 16 + 1;
-            } else if (r < 235) {  // [65,256]
+            } else if (r < 235) { // [65,256]
                 z = rand() % 192 + 65;
                 z = round_up((u64)z, 8ll);
-            } else if (r < 255) {  // [257,512]
+            } else if (r < 255) { // [257,512]
                 z = rand() % 256 + 257;
                 z = round_up((u64)z, 8ll);
-            } else {  // [513,2040]
+            } else { // [513,2040]
                 z = rand() % 1528 + 513;
                 z = round_up((u64)z, 8ll);
             }

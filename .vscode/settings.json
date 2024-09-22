@@ -1,0 +1,8 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "string.h": "c",
+        "unistd.h": "c",
+        "test.h": "c"
+    }
+}

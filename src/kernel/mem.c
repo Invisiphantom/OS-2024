@@ -9,6 +9,8 @@ RefCount kalloc_page_cnt;
 
 void kinit() {
     init_rc(&kalloc_page_cnt);
+
+    
 }
 
 void* kalloc_page() {
