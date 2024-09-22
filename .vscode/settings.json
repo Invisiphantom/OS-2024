@@ -3,6 +3,7 @@
     "files.associations": {
         "string.h": "c",
         "unistd.h": "c",
-        "test.h": "c"
+        "test.h": "c",
+        "mem.h": "c"
     }
 }
