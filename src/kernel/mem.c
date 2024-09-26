@@ -57,8 +57,15 @@ void kinit() {
     auto final_page = (struct FreePage*)p;
     final_page->next = NULL;  // 末尾页的next指针为NULL
 
-    u16 SA_SIZES[] = {2,  4,  8,   12,  16,  24,  32,  40,   48,  56,
-                      64, 96, 104, 128, 192, 256, 512, 1024, 2048};
+    u16 SA_SIZES[] = {2,    4,    8,   12,  16,
+
+                      24,   32,   40,  48,  56,  64,
+
+                      96,   128,  160, 192, 224, 256,
+
+                      384,  512,  640,
+
+                      1024, 1536, 2048};
 
     // 初始化Slab分配器
     for (int i = 0; i < SA_TYPES; i++) {
@@ -107,9 +114,13 @@ void* kalloc(unsigned long long size) {
             page->prev = NULL;  // 无前页
             page->next = NULL;  // 无后页
 
-            // TODO
-            page->free_block_head_offset =             // 首空闲对象偏移位置
-                round_up(sizeof(struct SlabPage), 8);  // 地址对齐
+            // 首对象偏移位置 (地址对齐)
+            if (SA[i].obj_size <= 2)
+                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 2);
+            if (SA[i].obj_size <= 4)
+                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 4);
+            else
+                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 8);
 
             // 初始化内部对象链表
             u16 obj_offset = page->free_block_head_offset;

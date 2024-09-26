@@ -72,7 +72,7 @@ void kalloc_test() {
 #endif
 
     for (int j = 0; j < 10000;) {
-        if (j % 1000 == 0)
+        if (j % 2000 == 0)
             printk("CPU%d: %d\n", i, j);
 
         // 前1000次, 或者概率为 9/16
