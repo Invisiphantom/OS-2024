@@ -114,9 +114,27 @@ void kalloc_test() {
             u64 q = (u64)p[i][j];
 
             // 检查内存地址是否对齐
-            if (p[i][j] == NULL || ((z & 1) == 0 && (q & 1) != 0) ||
-                ((z & 3) == 0 && (q & 3) != 0) || ((z & 7) == 0 && (q & 7) != 0))
-                FAIL("FAIL: kalloc(%d) = %p\n", z, p[i][j]);
+            //        z ->        q
+            // _______0 -> _______0 (2 byte)
+            // ______00 -> ______00 (4 byte)
+            // _0000000 -> _0000000 (8 byte)
+            
+            
+            // if (p[i][j] == NULL || ((z & 1) == 0 && (q & 1) != 0) ||
+            //     ((z & 3) == 0 && (q & 3) != 0) || ((z & 7) == 0 && (q & 7) != 0))
+            //     FAIL("FAIL: kalloc(%d) = %p\n", z, p[i][j]);
+
+            if (p[i][j] == NULL)
+                FAIL("NULL: kalloc(%d) = %p\n", z, p[i][j]);
+            
+            if ((z & 1) == 0 && (q & 1) != 0)
+                FAIL("2 byte: kalloc(%d) = %p\n", z, p[i][j]);
+
+            if ((z & 3) == 0 && (q & 3) != 0)
+                FAIL("4 byte: kalloc(%d) = %p\n", z, p[i][j]);
+
+            if ((z & 7) == 0 && (q & 7) != 0)
+                FAIL("8 byte: kalloc(%d) = %p\n", z, p[i][j]);
 
             memset(p[i][j], i ^ z, z);  // 将p[i][j]的每个字节都设置为i^z
             j++;
