@@ -4,6 +4,7 @@
 #include <kernel/core.h>
 #include <kernel/mem.h>
 #include <kernel/printk.h>
+#include <aarch64/mmu.h>
 
 static volatile bool boot_secondary_cpus = false;
 
@@ -12,6 +13,7 @@ void main() {
         /* @todo: Clear BSS section.*/
         extern char edata[], end[];
         memset(edata, 0, (usize)(end - edata));
+        printk("\n%p %p %p\n", (void *)K2P(edata), (void *)K2P(end), (void *)(end - edata));
 
         smp_init();
         uart_init();

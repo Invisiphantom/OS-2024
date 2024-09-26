@@ -8,7 +8,6 @@
 
 extern RefCount kalloc_page_cnt;
 
-static RefCount x;
 static void* p[4][10000];
 static short sz[4][10000];
 
@@ -25,14 +24,22 @@ static short sz[4][10000];
         ;                   \
     arch_dsb_sy();
 
+// #define SINGLE_CORE  // TODO
+
+#ifndef SINGLE_CORE
+static RefCount x;
+#endif
+
 void kalloc_test() {
-    int i = cpuid();
+    int i = cpuid();  // CPU编号
     int r = kalloc_page_cnt.count;
     int y = 10000 - i * 500;
-    if (i == 0)  // 0号CPU打印
-        printk("\n\nkalloc_test\n");
 
+    if (i == 0)
+        printk("SYNC(1)\n");
+#ifndef SINGLE_CORE
     SYNC(1)  // 确保4个CPU都到达
+#endif
 
     for (int j = 0; j < y; j++) {
         p[i][j] = kalloc_page();
@@ -49,89 +56,123 @@ void kalloc_test() {
         kfree_page(p[i][j]);
     }
 
+    if (i == 0)
+        printk("SYNC(2)\n");
+#ifndef SINGLE_CORE
     SYNC(2)
+#endif
 
     if (kalloc_page_cnt.count != r)  // 确保kalloc_page_cnt.count没有变化
         FAIL("FAIL: kalloc_page_cnt %d -> %lld\n", r, kalloc_page_cnt.count);
 
+    if (i == 0)
+        printk("SYNC(3)\n");
+#ifndef SINGLE_CORE
     SYNC(3)
+#endif
 
     for (int j = 0; j < 10000;) {
-        // 前1000次, 并且概率为 9/16
+        if (j % 1000 == 0)
+            printk("CPU%d: %d\n", i, j);
+
+        // 前1000次, 或者概率为 9/16
         if (j < 1000 || rand() > RAND_MAX / 16 * 7) {
             int z = 0;
             int r = rand() & 255;  // [0,255]
 
-            // r=[0,126]
+            // r=[0,126]  49.6%
             if (r < 127) {
                 z = rand() % 48 + 17;       // z=[17,64]
                 z = round_up((u64)z, 4ll);  // 向上对4的倍数取整
             }
 
-            // r=[127,180]
+            // r=[127,180]  20.7%
             else if (r < 181) {
                 z = rand() % 16 + 1;  // z=[1,16]
             }
 
-            // r=[181,234]
+            // r=[181,234]  20.7%
             else if (r < 235) {
                 z = rand() % 192 + 65;      // z=[65,256]
                 z = round_up((u64)z, 8ll);  // 向上对8的倍数取整
             }
 
-            // r=[235,254]
+            // r=[235,254]  7.42%
             else if (r < 255) {
                 z = rand() % 256 + 257;     // z=[257,512]
                 z = round_up((u64)z, 8ll);  // 向上对8的倍数取整
             }
 
-            // r=[255]
+            // r=[255]  0.04%
             else {
                 z = rand() % 1528 + 513;    // z=[513,2040]
                 z = round_up((u64)z, 8ll);  // 向上对8的倍数取整
             }
 
-            sz[i][j] = z;
-            p[i][j] = kalloc(z);
+            sz[i][j] = z;         // 记录大小
+            p[i][j] = kalloc(z);  // 分配大小为z的内存
             u64 q = (u64)p[i][j];
+
+            // 检查内存地址是否对齐
             if (p[i][j] == NULL || ((z & 1) == 0 && (q & 1) != 0) ||
                 ((z & 3) == 0 && (q & 3) != 0) || ((z & 7) == 0 && (q & 7) != 0))
                 FAIL("FAIL: kalloc(%d) = %p\n", z, p[i][j]);
-            memset(p[i][j], i ^ z, z);
+
+            memset(p[i][j], i ^ z, z);  // 将p[i][j]的每个字节都设置为i^z
             j++;
         }
 
         // 其他情况
         else {
-            int k = rand() % j;
+            int k = rand() % j;  // 随机选择一个内存块
             if (p[i][k] == NULL)
                 FAIL("FAIL: block[%d][%d] null\n", i, k);
             int m = (i ^ sz[i][k]) & 255;
+
+            // 检查内存块的每个字节是否都是i^z
             for (int t = 0; t < sz[i][k]; t++)
                 if (((u8*)p[i][k])[t] != m)
                     FAIL("FAIL: block[%d][%d] wrong\n", i, k);
+
             kfree(p[i][k]);
-            p[i][k] = p[i][--j];
+
+            j--;  // 将末尾的内存块填补到k位置
+            p[i][k] = p[i][j];
             sz[i][k] = sz[i][j];
         }
     }
 
+    if (i == 0)
+        printk("SYNC(4)\n");
+#ifndef SINGLE_CORE
     SYNC(4)
+#endif
 
     if (cpuid() == 0) {
         i64 z = 0;
+        // 计算目前分配的内存总大小
         for (int j = 0; j < 4; j++)
-            for (int k = 0; k < 10000; k++)
+            for (int k = 0; k < 10000; k++) {
                 z += sz[j][k];
+            }
+        // 打印总大小和当前页使用大小
         printk("Total: %lld\nUsage: %lld\n", z, kalloc_page_cnt.count - r);
     }
 
+    if (i == 0)
+        printk("SYNC(5)\n");
+#ifndef SINGLE_CORE
     SYNC(5)
+#endif
 
     for (int j = 0; j < 10000; j++)
         kfree(p[i][j]);
 
+    if (i == 0)
+        printk("SYNC(6)\n");
+#ifndef SINGLE_CORE
     SYNC(6)
+#endif
 
     if (cpuid() == 0)
         printk("kalloc_test PASS\n");

@@ -25,7 +25,7 @@ struct SlabAllocator {
     u16 obj_size;              // 对象长度
 };
 
-#define SA_TYPES 11  // Slab分配器种类
+#define SA_TYPES 18  // Slab分配器种类
 static struct SlabAllocator SA[SA_TYPES];
 
 // Slab页 (双向链表)
@@ -67,14 +67,24 @@ void kinit() {
     SA[0].obj_size = 2;
     SA[1].obj_size = 4;
     SA[2].obj_size = 8;
-    SA[3].obj_size = 16;
-    SA[4].obj_size = 32;
-    SA[5].obj_size = 64;
-    SA[6].obj_size = 128;
-    SA[7].obj_size = 256;
-    SA[8].obj_size = 512;
-    SA[9].obj_size = 1024;
-    SA[10].obj_size = 2048;
+    SA[3].obj_size = 12;
+    SA[4].obj_size = 16;
+
+    SA[5].obj_size = 24;
+    SA[6].obj_size = 32;
+    SA[7].obj_size = 40;
+    SA[8].obj_size = 48;
+    SA[9].obj_size = 56;
+    SA[10].obj_size = 64;
+
+    SA[11].obj_size = 96;
+    SA[12].obj_size = 128;
+    SA[13].obj_size = 192;
+    SA[14].obj_size = 256;
+
+    SA[15].obj_size = 512;
+    SA[16].obj_size = 1024;
+    SA[17].obj_size = 2048;
 }
 
 void* kalloc_page() {
