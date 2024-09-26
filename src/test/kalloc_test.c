@@ -24,6 +24,7 @@ static short sz[4][10000];
         ;                   \
     arch_dsb_sy();
 
+// 启用单CPU调试gdb
 // #define SINGLE_CORE  // TODO
 
 #ifndef SINGLE_CORE
@@ -72,9 +73,6 @@ void kalloc_test() {
 #endif
 
     for (int j = 0; j < 10000;) {
-        if (j % 2000 == 0)
-            printk("CPU%d: %d\n", i, j);
-
         // 前1000次, 或者概率为 9/16
         if (j < 1000 || rand() > RAND_MAX / 16 * 7) {
             int z = 0;

@@ -14,25 +14,33 @@ extern char end[];
 static struct FreePage* free_page_head;
 struct FreePage {
     struct FreePage* next;
-    char data[PAGE_SIZE - sizeof(struct FreePage*)];
 };
 
 // Slab分配器 (静态数组)
 struct SlabAllocator {
-    SpinLock list_lock;
+    SpinLock list_lock;        // 分配器自旋锁
     struct SlabPage* partial;  // 部分页链表
     struct SlabPage* full;     // 完全页链表
     u16 obj_size;              // 对象长度
 };
 
-#define SA_TYPES 30  // Slab分配器种类
+#define SA_TYPES 32  // Slab分配器种类数
 static struct SlabAllocator SA[SA_TYPES];
+static const u16 SA_SIZES[] = {2,    4,    8,    16,
+
+                               24,   32,   40,   48,  56,  64,
+
+                               96,   128,  160,  192, 224, 256,
+
+                               320,  384,  448,  512,
+
+                               1016, 1352, 2032, 2040};
 
 // Slab页 (双向链表)
 struct SlabPage {
-    u8 sa_type;                // 分配器类型
+    u8 sa_type;                // 所属的分配器类型
     u16 obj_cnt;               // 已分配对象数量
-    u16 free_obj_head_offset;  // 空闲链表头 偏移位置
+    u16 free_obj_head_offset;  // 首对象偏移位置
     struct SlabPage* prev;     // 上一个Slab页
     struct SlabPage* next;     // 下一个Slab页
 };
@@ -46,7 +54,7 @@ void kinit() {
     init_rc(&kalloc_page_cnt);
     init_spinlock(&kalloc_page_lock);
 
-    // 页空闲链表的初始地址: end关于PAGE_SIZE的整数倍对齐
+    // 空闲页链表的初始地址: end关于PAGE_SIZE的对齐
     free_page_head = (struct FreePage*)round_up((u64)end, PAGE_SIZE);
 
     // 初始化页空闲链表
@@ -58,22 +66,12 @@ void kinit() {
     }
     page->next = NULL;  // 末尾页的next指针为NULL
 
-    u16 SA_SIZES[] = {2,    4,    8,   12,  16,
-
-                      24,   32,   40,  48,  56,  64,
-
-                      96,   128,  160, 192, 224, 256,
-
-                      320,  384,  448, 512,
-
-                      1024, 1536, 2048};
-
-    // 初始化Slab分配器
+    // 初始化所有Slab分配器
     for (int i = 0; i < SA_TYPES; i++) {
         init_spinlock(&SA[i].list_lock);
+        SA[i].obj_size = SA_SIZES[i];
         SA[i].partial = NULL;
         SA[i].full = NULL;
-        SA[i].obj_size = SA_SIZES[i];
     }
 }
 
@@ -116,10 +114,10 @@ void* kalloc(unsigned long long size) {
             page->prev = NULL;  // 无前页
             page->next = NULL;  // 无后页
 
-            // 首对象偏移位置 (地址对齐)
+            // 首对象 偏移位置 (地址对齐)
             page->free_obj_head_offset = sizeof(struct SlabPage);
 
-            // 初始化内部对象链表
+            // 初始化 对象链表
             u16 obj_offset = page->free_obj_head_offset;
             auto obj = (struct SlabObj*)((u64)page + obj_offset);
             for (; obj_offset <= PAGE_SIZE - SA[i].obj_size; obj_offset += SA[i].obj_size) {
@@ -128,7 +126,8 @@ void* kalloc(unsigned long long size) {
             }
             obj->next_offset = NULL;  // 末尾对象的next指针为NULL
 
-            SA[i].partial = page;  // 更新部分链表首页
+            // 更新 部分链表首页
+            SA[i].partial = page;
         }
 
         auto obj = (struct SlabObj*)((u64)page + page->free_obj_head_offset);
@@ -182,7 +181,7 @@ void kfree(void* ptr) {
         SA[page->sa_type].partial = page;
     }
 
-    // 如果此时页已空
+    // 如果此时页已空, 则释放该页
     if (page->obj_cnt == 0) {
         if (page->prev != NULL)
             page->prev->next = page->next;
