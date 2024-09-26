@@ -10,14 +10,14 @@ RefCount kalloc_page_cnt;
 static SpinLock kalloc_page_lock;
 extern char end[];
 
-// 空闲页链表
+// 空闲页链表 (单向链表)
 static struct FreePage* free_page_head;
 struct FreePage {
     struct FreePage* next;
     char data[PAGE_SIZE - sizeof(struct FreePage*)];
 };
 
-// Slab分配器
+// Slab分配器 (静态数组)
 struct SlabAllocator {
     SpinLock list_lock;
     struct SlabPage* partial;  // 部分页链表
@@ -30,13 +30,14 @@ static struct SlabAllocator SA[SA_TYPES];
 
 // Slab页 (双向链表)
 struct SlabPage {
-    u8 sa_type;                  // Slab分配器类型
-    u16 free_block_head_offset;  // 空闲链表头 偏移位置
-    struct SlabPage* prev;       // 上一个Slab页
-    struct SlabPage* next;       // 下一个Slab页
+    u8 sa_type;                // 分配器类型
+    u16 obj_cnt;               // 已分配对象数量
+    u16 free_obj_head_offset;  // 空闲链表头 偏移位置
+    struct SlabPage* prev;     // 上一个Slab页
+    struct SlabPage* next;     // 下一个Slab页
 };
 
-// Slab对象
+// Slab对象 (单向链表)
 struct SlabObj {
     u16 next_offset;  // (2bytes)
 };
@@ -50,12 +51,12 @@ void kinit() {
 
     // 初始化页空闲链表
     auto p = (u64)free_page_head;
-    for (; p < P2K(PHYSTOP - PAGE_SIZE); p += PAGE_SIZE) {
-        auto page = (struct FreePage*)p;
+    auto page = (struct FreePage*)p;
+    for (; p < P2K(PHYSTOP); p += PAGE_SIZE) {
+        page = (struct FreePage*)p;
         page->next = (struct FreePage*)(p + PAGE_SIZE);
     }
-    auto final_page = (struct FreePage*)p;
-    final_page->next = NULL;  // 末尾页的next指针为NULL
+    page->next = NULL;  // 末尾页的next指针为NULL
 
     u16 SA_SIZES[] = {2,    4,    8,   12,  16,
 
@@ -63,7 +64,7 @@ void kinit() {
 
                       96,   128,  160, 192, 224, 256,
 
-                      384,  512,  640,
+                      320,  384,  448, 512,
 
                       1024, 1536, 2048};
 
@@ -111,19 +112,15 @@ void* kalloc(unsigned long long size) {
         if (page == NULL) {
             page = (struct SlabPage*)kalloc_page();
             page->sa_type = i;  // 所属分配器类型
+            page->obj_cnt = 0;  // 无已分配对象
             page->prev = NULL;  // 无前页
             page->next = NULL;  // 无后页
 
             // 首对象偏移位置 (地址对齐)
-            if (SA[i].obj_size <= 2)
-                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 2);
-            if (SA[i].obj_size <= 4)
-                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 4);
-            else
-                page->free_block_head_offset = round_up(sizeof(struct SlabPage), 8);
+            page->free_obj_head_offset = sizeof(struct SlabPage);
 
             // 初始化内部对象链表
-            u16 obj_offset = page->free_block_head_offset;
+            u16 obj_offset = page->free_obj_head_offset;
             auto obj = (struct SlabObj*)((u64)page + obj_offset);
             for (; obj_offset <= PAGE_SIZE - SA[i].obj_size; obj_offset += SA[i].obj_size) {
                 obj = (struct SlabObj*)((u64)page + obj_offset);
@@ -134,11 +131,12 @@ void* kalloc(unsigned long long size) {
             SA[i].partial = page;  // 更新部分链表首页
         }
 
-        auto obj = (struct SlabObj*)((u64)page + page->free_block_head_offset);
-        page->free_block_head_offset = obj->next_offset;
+        auto obj = (struct SlabObj*)((u64)page + page->free_obj_head_offset);
+        page->free_obj_head_offset = obj->next_offset;
+        page->obj_cnt++;
 
         // 如果页已满，则从部分链表移至完全链表
-        if (page->free_block_head_offset == NULL) {
+        if (page->free_obj_head_offset == NULL) {
             SA[i].partial = page->next;
             if (SA[i].partial != NULL)
                 SA[i].partial->prev = NULL;
@@ -163,8 +161,8 @@ void kfree(void* ptr) {
 
     acquire_spinlock(&SA[page->sa_type].list_lock);
 
-    obj->next_offset = page->free_block_head_offset;
-    page->free_block_head_offset = (u16)((u64)obj - (u64)page);
+    obj->next_offset = page->free_obj_head_offset;
+    page->free_obj_head_offset = (u16)((u64)obj - (u64)page);
 
     // 如果此时页在完全链表, 则将其移至部分链表
     if (obj->next_offset == NULL) {
@@ -182,6 +180,21 @@ void kfree(void* ptr) {
         page->prev = NULL;
         page->next = SA[page->sa_type].partial;
         SA[page->sa_type].partial = page;
+    }
+
+    // 如果此时页已空
+    if (page->obj_cnt == 0) {
+        if (page->prev != NULL)
+            page->prev->next = page->next;
+        if (page->next != NULL)
+            page->next->prev = page->prev;
+
+        if (SA[page->sa_type].partial == page)
+            SA[page->sa_type].partial = page->next;
+        if (SA[page->sa_type].full == page)
+            SA[page->sa_type].full = page->next;
+
+        kfree_page(page);
     }
 
     release_spinlock(&SA[page->sa_type].list_lock);
