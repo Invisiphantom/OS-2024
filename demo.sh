@@ -1,2 +1,2 @@
 cd build
-make qemu
+make qemu -s

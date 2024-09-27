@@ -36,8 +36,8 @@ void kalloc_test() {
     int r = kalloc_page_cnt.count;
     int y = 10000 - i * 500;
 
-    if (i == 0)
-        printk("SYNC(1)\n");
+    // if (i == 0)
+    //     printk("SYNC(1)\n");
 #ifndef SINGLE_CORE
     SYNC(1)  // 确保4个CPU都到达
 #endif
@@ -57,8 +57,8 @@ void kalloc_test() {
         kfree_page(p[i][j]);
     }
 
-    if (i == 0)
-        printk("SYNC(2)\n");
+    // if (i == 0)
+    //     printk("SYNC(2)\n");
 #ifndef SINGLE_CORE
     SYNC(2)
 #endif
@@ -66,8 +66,8 @@ void kalloc_test() {
     if (kalloc_page_cnt.count != r)  // 确保kalloc_page_cnt.count没有变化
         FAIL("FAIL: kalloc_page_cnt %d -> %lld\n", r, kalloc_page_cnt.count);
 
-    if (i == 0)
-        printk("SYNC(3)\n");
+    // if (i == 0)
+    //     printk("SYNC(3)\n");
 #ifndef SINGLE_CORE
     SYNC(3)
 #endif
@@ -158,8 +158,8 @@ void kalloc_test() {
         }
     }
 
-    if (i == 0)
-        printk("SYNC(4)\n");
+    // if (i == 0)
+    //     printk("SYNC(4)\n");
 #ifndef SINGLE_CORE
     SYNC(4)
 #endif
@@ -175,8 +175,8 @@ void kalloc_test() {
         printk("Total: %lld\nUsage: %lld\n", z, kalloc_page_cnt.count - r);
     }
 
-    if (i == 0)
-        printk("SYNC(5)\n");
+    // if (i == 0)
+    //     printk("SYNC(5)\n");
 #ifndef SINGLE_CORE
     SYNC(5)
 #endif
@@ -184,8 +184,8 @@ void kalloc_test() {
     for (int j = 0; j < 10000; j++)
         kfree(p[i][j]);
 
-    if (i == 0)
-        printk("SYNC(6)\n");
+    // if (i == 0)
+    //     printk("SYNC(6)\n");
 #ifndef SINGLE_CORE
     SYNC(6)
 #endif
