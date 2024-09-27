@@ -13,6 +13,9 @@
         "rc.h": "c",
         "defines.h": "c",
         "spinlock.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "proc.h": "c",
+        "sem.h": "c",
+        "rbtree.h": "c"
     }
 }

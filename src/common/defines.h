@@ -50,7 +50,7 @@ typedef u64 usize;
 // NO_RETURN NO_INLINE void no_return();
 
 /* Return the offset of `member` inside struct `type`. */
-#define offset_of(type, member) ((usize)(&((type *)NULL)->member))
+#define offset_of(type, member) ((usize)(&((type*)NULL)->member))
 
 /**
  * The following macro assumes that `mptr` is a pointer to a `member` within
@@ -60,7 +60,7 @@ typedef u64 usize;
  * This macro is particularly useful in scenarios involving lists. For instance,
  * it is common practice to embed a `ListNode` within a struct, as demonstrated
  * below:
- * 
+ *
  * typedef struct {
  *     u64 data;
  *     ListNode node;
@@ -72,26 +72,24 @@ typedef u64 usize;
  * In this example, the expression `container_of(b, Container, node)` will yield
  * the same result as `&a`.
  */
-#define container_of(mptr, type, member)                      \
-    ({                                                        \
-        const typeof(((type *)NULL)->member) *_mptr = (mptr); \
-        (type *)((u8 *)_mptr - offset_of(type, member));      \
+#define container_of(mptr, type, member)                     \
+    ({                                                       \
+        const typeof(((type*)NULL)->member)* _mptr = (mptr); \
+        (type*)((u8*)_mptr - offset_of(type, member));       \
     })
 
 /* Return the largest c that c is a multiple of b and c <= a. */
-static INLINE u64 round_down(u64 a, u64 b)
-{
+static INLINE u64 round_down(u64 a, u64 b) {
     return a - a % b;
 }
 
 /* Return the smallest c that c is a multiple of b and c >= a. */
-static INLINE u64 round_up(u64 a, u64 b)
-{
+static INLINE u64 round_up(u64 a, u64 b) {
     return round_down(a + b - 1, b);
 }
 
-void _panic(const char *, int);
-NO_INLINE NO_RETURN void _panic(const char *, int);
+void _panic(const char*, int);
+NO_INLINE NO_RETURN void _panic(const char*, int);
 #define PANIC() _panic(__FILE__, __LINE__)
 #define ASSERT(expr) \
     ({               \

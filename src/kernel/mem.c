@@ -26,15 +26,7 @@ struct SlabAllocator {
 
 #define SA_TYPES 32  // Slab分配器种类数
 static struct SlabAllocator SA[SA_TYPES];
-static const u16 SA_SIZES[] = {2,    4,    8,    16,
-
-                               24,   32,   40,   48,  56,  64,
-
-                               96,   128,  160,  192, 224, 256,
-
-                               320,  384,  448,  512,
-
-                               1016, 1352, 2032, 2040};
+static const u16 SA_SIZES[] = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072};
 
 // Slab页 (双向链表)
 struct SlabPage {
