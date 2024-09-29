@@ -55,7 +55,6 @@ dkms.conf
 
 # Local files
 .gdb_history
-.vscode/
 .cache/
 .mypy_cache/
 
