@@ -11,7 +11,7 @@ void acquire_sched_lock();
 void release_sched_lock();
 void sched(enum procstate new_state);
 
-// MUST call lock_for_sched() before sched() !!!
+// 必须要在调用sched()之前调用lock_for_sched()
 #define yield() (acquire_sched_lock(), sched(RUNNABLE))
 
 Proc *thisproc();

@@ -18,6 +18,7 @@ void init_sched() {
 
 Proc* thisproc() {
     // TODO: return the current process
+    return 0;
 }
 
 void init_schinfo(struct schinfo* p) {
@@ -45,6 +46,7 @@ bool activate_proc(Proc* p) {
     // if the proc->state is RUNNING/RUNNABLE, do nothing
     // if the proc->state if SLEEPING/UNUSED, set the process state to RUNNABLE and add it to
     // the sched queue else: panic
+    return 0;
 }
 
 static void update_this_state(enum procstate new_state) {
@@ -56,6 +58,7 @@ static void update_this_state(enum procstate new_state) {
 static Proc* pick_next() {
     // TODO: if using template sched function, you should implement this routinue
     // choose the next process to run, and return idle if no runnable process
+    return 0;
 }
 
 static void update_this_proc(Proc* p) {
@@ -63,16 +66,21 @@ static void update_this_proc(Proc* p) {
     // update thisproc to the choosen process
 }
 
-// A simple scheduler.
-// You are allowed to replace it with whatever you like.
-// call with sched_lock
+// 调度器 (需要持有 sched_lock)
 void sched(enum procstate new_state) {
     auto this = thisproc();
+
+    // 确保当前进程是 RUNNING 状态
     ASSERT(this->state == RUNNING);
+
     update_this_state(new_state);
+
     auto next = pick_next();
+
     update_this_proc(next);
+
     ASSERT(next->state == RUNNABLE);
+
     next->state = RUNNING;
     
     if (next != this) {

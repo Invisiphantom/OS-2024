@@ -8,26 +8,22 @@
 
 static InterruptHandler int_handler[NUM_IRQ_TYPES];
 
-static void default_handler(u32 intid)
-{
+static void default_handler(u32 intid) {
     printk("[Error CPU %lld]: Interrupt %d not implemented.", cpuid(), intid);
     PANIC();
 }
 
-void init_interrupt()
-{
+void init_interrupt() {
     for (usize i = 0; i < NUM_IRQ_TYPES; i++) {
         int_handler[i] = default_handler;
     }
 }
 
-void set_interrupt_handler(InterruptType type, InterruptHandler handler)
-{
+void set_interrupt_handler(InterruptType type, InterruptHandler handler) {
     int_handler[type] = handler;
 }
 
-void interrupt_global_handler()
-{
+void interrupt_global_handler() {
     u32 iar = gic_iar();
     u32 intid = iar & 0x3ff;
 

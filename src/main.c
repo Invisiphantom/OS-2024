@@ -10,52 +10,44 @@
 #include <kernel/proc.h>
 #include <driver/gicv3.h>
 #include <driver/timer.h>
-
 #include <aarch64/mmu.h>
 
 static volatile bool boot_secondary_cpus = false;
 
 void main() {
     if (cpuid() == 0) {
-        /* @todo: Clear BSS section.*/
+        // 清空 bss 段
         extern char edata[], end[];
         memset(edata, 0, (usize)(end - edata));
-        printk("\n%p %p %p\n", (void*)K2P(edata), (void*)K2P(end), (void*)(end - edata));
 
-        /* initialize interrupt handler */
-        init_interrupt();
+        init_interrupt();  // 初始化中断处理程序
 
-        uart_init();
-        printk_init();
+        uart_init();    // 初始化终端 (UART)
+        printk_init();  // 初始化printk
 
-        gicv3_init();
-        gicv3_init_percpu();
+        gicv3_init();         // 初始化GICv3
+        gicv3_init_percpu();  // 当前CPU 设置GICv3
 
-        timer_init(1000);
-        timer_init_percpu();
+        timer_init(1000);     // 初始化定时器
+        timer_init_percpu();  // 当前CPU 设置定时器
 
-        /* initialize kernel memory allocator */
-        kinit();
+        kinit();  // 初始化内核内存分配器
 
-        /* initialize sched */
-        init_sched();
+        init_sched();  // 初始化调度器
+        init_kproc();  // 初始化内核进程
 
-        /* initialize kernel proc */
-        init_kproc();
+        smp_init();  // 初始化多核
 
-        smp_init();
-
-        arch_fence();
-
-        // Set a flag indicating that the secondary CPUs can start executing.
+        arch_fence();  // 内存屏障
         boot_secondary_cpus = true;
     } else {
         while (!boot_secondary_cpus)
             ;
-        arch_fence();
-        timer_init_percpu();
-        gicv3_init_percpu();
+        arch_fence();         // 内存屏障
+        timer_init_percpu();  // 当前CPU 设置定时器
+        gicv3_init_percpu();  // 当前CPU 设置GICv3
     }
 
+    // 设置跳转入口为idle_entry
     set_return_addr(idle_entry);
 }

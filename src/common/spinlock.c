@@ -1,28 +1,30 @@
 #include <aarch64/intrinsic.h>
 #include <common/spinlock.h>
 
-void init_spinlock(SpinLock *lock)
-{
+// 初始化自旋锁
+void init_spinlock(SpinLock* lock) {
     lock->locked = 0;
 }
 
-bool try_acquire_spinlock(SpinLock *lock)
-{
-    if (!lock->locked &&
-        !__atomic_test_and_set(&lock->locked, __ATOMIC_ACQUIRE)) {
+// 尝试获取自旋锁
+bool try_acquire_spinlock(SpinLock* lock) {
+    // 如果锁未被占用, 则尝试获取锁
+    if (!lock->locked && !__atomic_test_and_set(&lock->locked, __ATOMIC_ACQUIRE)) {
         return true;
-    } else {
+    } 
+    // 否则, 返回获取失败
+    else {
         return false;
     }
 }
 
-void acquire_spinlock(SpinLock *lock)
-{
+// 循环获取自旋锁
+void acquire_spinlock(SpinLock* lock) {
     while (!try_acquire_spinlock(lock))
         arch_yield();
 }
 
-void release_spinlock(SpinLock *lock)
-{
+// 释放自旋锁
+void release_spinlock(SpinLock* lock) {
     __atomic_clear(&lock->locked, __ATOMIC_RELEASE);
 }

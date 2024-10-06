@@ -16,6 +16,8 @@
         "stdlib.h": "c",
         "proc.h": "c",
         "sem.h": "c",
-        "rbtree.h": "c"
+        "rbtree.h": "c",
+        "cstdlib": "c",
+        "list.h": "c"
     }
 }

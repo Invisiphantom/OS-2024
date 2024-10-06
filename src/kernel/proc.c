@@ -52,6 +52,7 @@ int start_proc(Proc *p, void (*entry)(u64), u64 arg)
     // 2. setup the kcontext to make the proc start with proc_entry(entry, arg)
     // 3. activate the proc and return its pid
     // NOTE: be careful of concurrency
+    return 0;
 }
 
 int wait(int *exitcode)
@@ -61,6 +62,7 @@ int wait(int *exitcode)
     // 2. wait for childexit
     // 3. if any child exits, clean it up and return its pid and exitcode
     // NOTE: be careful of concurrency
+    return 0;
 }
 
 NO_RETURN void exit(int code)

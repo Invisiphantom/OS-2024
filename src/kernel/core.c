@@ -6,24 +6,32 @@
 
 volatile bool panic_flag;
 
-NO_RETURN void idle_entry()
-{
-    set_cpu_on();
-    while (1) {
-        yield();
-        if (panic_flag)
-            break;
-        arch_with_trap
-        {
-            arch_wfi();
-        }
-    }
-    set_cpu_off();
+// NO_RETURN void idle_entry() {
+    
+//     set_cpu_on();
+
+//     while (1) {
+//         yield();
+
+//         if (panic_flag)
+//             break;
+        
+//         arch_with_trap {
+//             arch_wfi();
+//         }
+//     }
+    
+//     set_cpu_off();
+    
+//     arch_stop_cpu();
+// }
+
+NO_RETURN void idle_entry() {
+    kalloc_test();
     arch_stop_cpu();
 }
 
-NO_RETURN void kernel_entry()
-{
+NO_RETURN void kernel_entry() {
     printk("Hello world! (Core %lld)\n", cpuid());
     proc_test();
 
@@ -31,8 +39,7 @@ NO_RETURN void kernel_entry()
         yield();
 }
 
-NO_INLINE NO_RETURN void _panic(const char *file, int line)
-{
+NO_INLINE NO_RETURN void _panic(const char* file, int line) {
     printk("=====%s:%d PANIC%lld!=====\n", file, line, cpuid());
     panic_flag = true;
     set_cpu_off();

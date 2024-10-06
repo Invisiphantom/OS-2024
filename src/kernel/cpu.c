@@ -6,8 +6,7 @@
 
 struct cpu cpus[NCPU];
 
-void set_cpu_on()
-{
+void set_cpu_on() {
     ASSERT(!_arch_disable_trap());
     // disable the lower-half address to prevent stupid errors
     extern PTEntries invalid_pt;
@@ -19,8 +18,7 @@ void set_cpu_on()
     printk("CPU %lld: hello\n", cpuid());
 }
 
-void set_cpu_off()
-{
+void set_cpu_off() {
     _arch_disable_trap();
     cpus[cpuid()].online = false;
     printk("CPU %lld: stopped\n", cpuid());
