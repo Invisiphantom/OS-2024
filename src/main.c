@@ -20,7 +20,7 @@ void main() {
         extern char edata[], end[];
         memset(edata, 0, (usize)(end - edata));
 
-        init_interrupt();  // 初始化中断处理程序
+        init_interrupt();  // 初始化每种中断的处理函数
 
         uart_init();    // 初始化终端 (UART)
         printk_init();  // 初始化printk
@@ -34,15 +34,18 @@ void main() {
         kinit();  // 初始化内核内存分配器
 
         init_sched();  // 初始化调度器
-        init_kproc();  // 初始化内核进程
+        init_kproc();  // 初始化第一个内核进程 (root_proc)
 
         smp_init();  // 初始化多核
 
         arch_fence();  // 内存屏障
         boot_secondary_cpus = true;
-    } else {
+    }
+
+    else {
         while (!boot_secondary_cpus)
             ;
+
         arch_fence();         // 内存屏障
         timer_init_percpu();  // 当前CPU 设置定时器
         gicv3_init_percpu();  // 当前CPU 设置GICv3

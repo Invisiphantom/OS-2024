@@ -90,7 +90,9 @@ static INLINE u64 round_up(u64 a, u64 b) {
 
 void _panic(const char*, int);
 NO_INLINE NO_RETURN void _panic(const char*, int);
+
 #define PANIC() _panic(__FILE__, __LINE__)
+
 #define ASSERT(expr) \
     ({               \
         if (!(expr)) \
