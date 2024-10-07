@@ -46,9 +46,10 @@ ListNode* _insert_into_list(ListNode* list, ListNode* node)
 ListNode* _detach_from_list(ListNode* node)
 {
     ListNode* prev = node->prev;
+    ListNode* next = node->next;
 
-    node->prev->next = node->next;
-    node->next->prev = node->prev;
+    prev->next = next;
+    next->prev = prev;
     init_list_node(node);
 
     if (prev == node)
@@ -57,10 +58,7 @@ ListNode* _detach_from_list(ListNode* node)
 }
 
 // 判断链表是否为空
-inline bool _empty_list(ListNode* list)
-{
-    return (list->next == list);
-}
+inline bool _empty_list(ListNode* list) { return (list->next == list); }
 
 // -------------------------------- Queue -------------------------------- //
 
@@ -83,31 +81,36 @@ void queue_push(Queue* x, ListNode* item)
 {
     init_list_node(item);
 
-    // 如果队列为空, 则直接添加
-    if (x->sz == 0) {
+    if (x->sz == 0)
         x->begin = x->end = item;
-        x->sz = 1;
-    }
-
-    // 否则将item添加到队列尾部
     else {
         _merge_list(x->end, item);
         x->end = item;
     }
+
+    x->sz++;
 }
 
 // 从队列x的头部移除一个结点 (需持有队列锁)
 void queue_pop(Queue* x)
 {
+    // 确保队列不为空
     if (x->sz == 0)
         PANIC();
+
+    // 如果只有单元素, 则清空
     if (x->sz == 1) {
         x->begin = x->end = 0;
-    } else {
+    }
+
+    // 否则将头部结点移除
+    else {
         auto t = x->begin;
         x->begin = x->begin->next;
         _detach_from_list(t);
     }
+
+    // 长度减1
     x->sz--;
 }
 
@@ -115,15 +118,25 @@ void queue_detach(Queue* x, ListNode* item)
 {
     if (x->sz == 0)
         PANIC();
-    if (x->sz == 1) {
+
+    if (x->sz == 1)
         x->begin = x->end = 0;
-    } else if (x->begin == item) {
+    else if (x->begin == item)
         x->begin = x->begin->next;
-    } else if (x->end == item) {
+    else if (x->end == item)
         x->end = x->end->prev;
-    }
+
     _detach_from_list(item);
     x->sz--;
+}
+
+void queue_rotate(Queue* x)
+{
+    if (x->sz <= 1)
+        return;
+
+    x->begin = x->begin->next;
+    x->end = x->end->next;
 }
 
 // 返回队列x的头部结点

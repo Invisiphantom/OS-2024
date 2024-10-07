@@ -1,3 +1,4 @@
+
 #define pushp(a, b) stp a, b, [sp, #-0x10]!
 #define popp(a, b) ldp a, b, [sp], #0x10 
 
@@ -6,7 +7,7 @@
 trap_entry:
 // TODO: save UserContext
 
-bl trap_global_handler
+    bl trap_global_handler
 
 .global trap_return
 trap_return:

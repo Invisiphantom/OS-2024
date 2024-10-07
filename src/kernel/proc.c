@@ -58,7 +58,7 @@ void init_proc(Proc* p)
     p->exitcode = 0;
     p->state = UNUSED;
 
-    init_sleeplock(&p->childexit);
+    init_sem(&p->childexit, 0);
     init_list_node(&p->children);
     init_list_node(&p->ptnode);
 
@@ -77,6 +77,12 @@ Proc* create_proc()
 {
     Proc* p = kalloc(sizeof(Proc));
     init_proc(p);
+
+    // DEBUG
+    auto ps = (u64)p % 0x10000;
+    printk("pid=%d - addr=0x%p - schnode=0x%p - ptnode=0x%p\n", p->pid, (void*)ps,
+        (void*)(ps + 0x50), (void*)(ps + 0x38));
+
     return p;
 }
 
@@ -85,9 +91,9 @@ void set_parent_to_this(Proc* proc)
 {
     acquire_spinlock(&proc_lock);
 
-    auto par_proc = thisproc();
-    proc->parent = par_proc;
-    _insert_into_list(&par_proc->children, &proc->ptnode);
+    auto p = thisproc();
+    proc->parent = p;
+    _insert_into_list(&p->children, &proc->ptnode);
 
     release_spinlock(&proc_lock);
 }
@@ -97,8 +103,10 @@ int start_proc(Proc* p, void (*entry)(u64), u64 arg)
 {
     acquire_spinlock(&proc_lock);
 
-    if (p->parent == NULL)
+    if (p->parent == NULL) {
         p->parent = &root_proc;
+        _insert_into_list(&root_proc.children, &p->ptnode);
+    }
 
     // 设置swtch返回到 proc_entry(entry, arg)
     p->kcontext->x30 = (u64)proc_entry;
@@ -127,10 +135,12 @@ int wait(int* exitcode)
         return -1;
     }
 
+    auto p = thisproc();
     for (;;) {
-        ListNode* pp_node = NULL; // 遍历所有子进程
-        _for_in_list(pp_node, &thisproc()->children)
-        {
+
+        ListNode* pp_node = p->children.next; // 遍历所有子进程
+        for (;;) {
+            auto pp_node_next = pp_node->next;
             auto pp = container_of(pp_node, Proc, ptnode);
 
             // 如果子进程已经退出, 则释放子进程资源
@@ -143,6 +153,9 @@ int wait(int* exitcode)
                 // 释放子进程所有资源
                 // (栈从高地址向低地址增长)
                 // 释放内核栈, 用户进程上下文栈, 内核进程上下文栈
+
+                _detach_from_list(&pp->ptnode);
+
                 kfree_page((void*)round_up((u64)pp->kstack - PAGE_SIZE, PAGE_SIZE));
                 kfree_page((void*)round_up((u64)pp->ucontext - PAGE_SIZE, PAGE_SIZE));
                 kfree_page((void*)round_up((u64)pp->kcontext - PAGE_SIZE, PAGE_SIZE));
@@ -151,11 +164,18 @@ int wait(int* exitcode)
                 release_spinlock(&proc_lock);
                 return pid;
             }
+
+            // 如果遍历完所有子进程, 则等待子进程退出
+            // 否则继续遍历下一个子进程
+            if (pp_node_next == &p->children)
+                break;
+            else
+                pp_node = pp_node_next;
         }
 
         // 释放锁 并在sleeplist上休眠, 醒来时重新获取锁
         release_spinlock(&proc_lock);
-        acquire_sleeplock(&thisproc()->childexit);
+        wait_sem(&p->childexit);
         acquire_spinlock(&proc_lock);
     }
 
@@ -174,17 +194,27 @@ NO_RETURN void exit(int code)
         PANIC();
 
     // 将p的弃子交给root_proc
-    ListNode* pp_node; // 遍历所有子进程
-    _for_in_list(pp_node, &thisproc()->children)
+
+    if (_empty_list(&p->children) == false)
     {
-        auto pp = container_of(pp_node, Proc, ptnode);
-        pp->parent = &root_proc;
-        _insert_into_list(&root_proc.children, &pp->ptnode);
-        activate_proc(&root_proc); // 唤醒root_proc
+        ListNode* pp_node = p->children.next;
+        for (;;) {
+            auto pp_node_next = pp_node->next;
+
+            auto pp = container_of(pp_node, Proc, ptnode);
+            pp->parent = &root_proc;
+            _insert_into_list(&root_proc.children, &pp->ptnode);
+            activate_proc(&root_proc); // 激活root_proc
+
+            if (pp_node_next == &p->children)
+                break;
+            else
+                pp_node = pp_node_next;
+        }
     }
 
-    activate_proc(p->parent); // 唤醒父进程
-    p->exitcode = code;       // 记录退出状态位
+    post_sem(&p->parent->childexit); // 释放父进程信号量
+    p->exitcode = code;              // 记录退出状态位
 
     acquire_sched_lock();
     sched(ZOMBIE); // 调度进程

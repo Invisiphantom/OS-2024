@@ -95,10 +95,7 @@ static Proc* pick_next()
     auto p = container_of(node, Proc, schinfo.sched_node);
 
     // 将该进程从队列头 移动到 队列尾
-    queue_lock(&sched_queue);
-    queue_pop(&sched_queue);
-    queue_push(&sched_queue, node);
-    queue_unlock(&sched_queue);
+    queue_rotate_lock(&sched_queue);
 
     return p;
 }

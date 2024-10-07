@@ -43,7 +43,7 @@ NO_RETURN void kernel_entry()
 
 NO_INLINE NO_RETURN void _panic(const char* file, int line)
 {
-    printk("=====%s:%d PANIC%lld!=====\n", file, line, cpuid());
+    printk("===== %s:%d PANIC cpu%lld =====\n", file, line, cpuid());
 
     // 设置panic标志, 通知其他CPU停止
     panic_flag = true;

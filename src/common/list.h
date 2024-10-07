@@ -16,10 +16,7 @@ ListNode* _detach_from_list(ListNode* node);
 bool _empty_list(ListNode* list);
 
 
-// - walk through the list
-#define _for_in_list(valptr, list)                                             \
-    for (ListNode* __flag = (list), *valptr = __flag->next; valptr;            \
-         valptr = valptr == __flag ? (void*)0 : valptr->next)
+
 
 
 // * List operations with locks
@@ -60,6 +57,7 @@ void queue_unlock(Queue* x);
 void queue_push(Queue* x, ListNode* item);
 void queue_pop(Queue* x);
 void queue_detach(Queue* x, ListNode* item);
+void queue_rotate(Queue* x);
 ListNode* queue_front(Queue* x);
 bool queue_empty(Queue* x);
 
@@ -81,7 +79,12 @@ bool queue_empty(Queue* x);
         queue_detach(x, item);                                                 \
         queue_unlock(x);                                                       \
     })
-
+#define queue_rotate_lock(x)                                                   \
+    ({                                                                         \
+        queue_lock(x);                                                         \
+        queue_rotate(x);                                                       \
+        queue_unlock(x);                                                       \
+    })
 
 
 // -------------------------------- QueueNode -------------------------------- //
