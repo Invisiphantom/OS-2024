@@ -7,74 +7,117 @@
 #include <common/rbtree.h>
 
 extern bool panic_flag;
+extern SpinLock proc_lock;
 
-static SpinLock sched_lock;
+static SpinLock sched_lock; // 调度锁
+static Queue sched_queue;   // 调度队列
 
-extern void swtch(KernelContext* new_ctx, KernelContext** old_ctx);
+extern void swtch(KernelContext** old_ctx, KernelContext* new_ctx);
 
-// 1. 初始化调度器资源
-// 2. 初始化每个CPU的调度信息
 // TODO: 初始化调度器
-void init_sched() {
-    init_spinlock(&sched_lock);
+void init_sched()
+{
+    init_spinlock(&sched_lock); // 初始化调度锁
+    queue_init(&sched_queue);   // 初始化调度队列
 }
 
-// TODO: 返回当前CPU执行的进程
-Proc* thisproc() {
-
-    return 0;
-}
+// TODO: 返回当前CPU上执行的进程
+Proc* thisproc() { return thiscpu->sched.proc; }
 
 // TODO: 为每个新进程 初始化自定义的schinfo
-void init_schinfo(struct schinfo* p) {}
+void init_schinfo(struct schinfo* p) { }
 
-// 获取调度锁
-void acquire_sched_lock() {
-    acquire_spinlock(&sched_lock);
-}
-
-// 释放调度锁
-void release_sched_lock() {
-    release_spinlock(&sched_lock);
-}
+// 调用schd()之前, 需要获取sched_lock
+void acquire_sched_lock() { acquire_spinlock(&sched_lock); }
+void release_sched_lock() { release_spinlock(&sched_lock); }
 
 // 判断进程p是否为ZOOMBIE状态
-bool is_zombie(Proc* p) {
-    bool r;
-
+bool is_zombie(Proc* p)
+{
     acquire_sched_lock();
-    r = p->state == ZOMBIE;
+    bool r = (p->state == ZOMBIE);
     release_sched_lock();
-
     return r;
 }
 
-// TODO:
+// TODO: 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
-// 如果进程状态是 SLEEPING/UNUSED:  将进程状态设置为 RUNNABLE 并将其添加到调度队列
-// 其他情况 : panic
-bool activate_proc(Proc* p) {
-    return 0;
+// 如果进程状态是 SLEEPING/UNUSED:  将进程状态设置为 RUNNABLE
+// 并将其添加到调度队列 其他情况 : panic
+bool activate_proc(Proc* p)
+{
+    if (p->state == RUNNING || p->state == RUNNABLE)
+        return true;
+
+    if (p->state == SLEEPING || p->state == UNUSED) {
+        // 更新进程状态设置为 RUNNABLE
+        acquire_spinlock(&proc_lock);
+        p->state = RUNNABLE;
+        release_spinlock(&proc_lock);
+
+        // 将其添加到调度队列
+        queue_push_lock(&sched_queue, &p->schinfo.sched_node);
+
+        return true;
+    }
+
+    printk("activate_proc: invalid state %d\n", p->state);
+    PANIC();
+    return false;
 }
 
-// TODO:
-// 更新当前进程的状态为new_state
-// 如果new_state=SLEEPING/ZOMBIE, 则从调度队列中移除
-static void update_this_state(enum procstate new_state) {}
+// TODO: 更新当前进程的状态为new_state
+static void update_this_state(enum procstate new_state)
+{
+    acquire_spinlock(&proc_lock);
 
-// TODO: 选择调度队列的下一个进程运行
+    // 更新状态为new_state
+    auto p = thisproc();
+    p->state = new_state;
+
+    // 如果new_state=SLEEPING/ZOMBIE, 则从调度队列中移除
+    if (new_state == SLEEPING || new_state == ZOMBIE)
+        queue_detach_lock(&sched_queue, &p->schinfo.sched_node);
+
+    release_spinlock(&proc_lock);
+}
+
+// TODO: 从调度队列中挑选进程
 // 如果没有可运行的进程则返回idle
-static Proc* pick_next() {
-    return 0;
+static Proc* pick_next()
+{
+    // 如果没有可运行进程, 则返回idle
+    if (queue_empty(&sched_queue))
+        return thiscpu->sched.idle_proc;
+
+    // 选择队列头的进程
+    auto node = queue_front(&sched_queue);
+    auto p = container_of(node, Proc, schinfo.sched_node);
+
+    // 将该进程从队列头 移动到 队列尾
+    queue_lock(&sched_queue);
+    queue_pop(&sched_queue);
+    queue_push(&sched_queue, node);
+    queue_unlock(&sched_queue);
+
+    return p;
 }
 
-// TODO: you should implement this routinue
-// update thisproc to the choosen process
-// 将进程p更新为选择的进程
-static void update_this_proc(Proc* p) {}
+// TODO: 将进程p更新为CPU选择的进程
+static void update_this_proc(Proc* p)
+{
+    acquire_spinlock(&proc_lock);
+
+    auto c = thiscpu;
+    c->sched.proc = p;
+    p->state = RUNNABLE;
+
+    release_spinlock(&proc_lock);
+}
 
 // 接受调度 并将当前进程状态更新为new_state (需持有sched_lock)
-void sched(enum procstate new_state) {
+void sched(enum procstate new_state)
+{
     // 获取当前执行的进程
     Proc* this = thisproc();
 
@@ -96,15 +139,18 @@ void sched(enum procstate new_state) {
     // 切换到下一个进程
     next->state = RUNNING;
 
-    // 如果下一个进程不是当前进程, 则切换上下文
+    // 由进程负责释放锁 并在返回到调度器之前重新获取锁
+    // 将旧上下文压栈 并用this->kcontext保存sp
+    // 然后从next->kcontext的sp加载新上下文
     if (next != this)
-        swtch(next->kcontext, &this->kcontext);
+        swtch(&this->kcontext, next->kcontext);
 
     // 释放调度锁
     release_sched_lock();
 }
 
-u64 proc_entry(void (*entry)(u64), u64 arg) {
+u64 proc_entry(void (*entry)(u64), u64 arg)
+{
     // 释放调度锁
     release_sched_lock();
 

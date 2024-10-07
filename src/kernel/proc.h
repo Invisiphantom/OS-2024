@@ -8,46 +8,75 @@
 // 进程状态
 enum procstate { UNUSED, RUNNABLE, RUNNING, SLEEPING, ZOMBIE };
 
-// 用户进程上下文
+// TODO 用户进程上下文
 typedef struct UserContext {
-    // TODO: customize your trap frame
+    u64 x0; // 第一个参数 (start_proc)
+    u64 x1; // 第二个参数 (start_proc)
+    u64 x19;
+    u64 x20;
+    u64 x21;
+    u64 x22;
+    u64 x23;
+    u64 x24;
+    u64 x25;
+    u64 x26;
+    u64 x27;
+    u64 x28;
+    u64 x29; // Frame Pointer
+    u64 x30; // Procedure Link Register
 } UserContext;
 
-// 内核进程上下文
+// TODO 内核进程上下文
 typedef struct KernelContext {
-    // TODO: customize your context
+    u64 x0; // 第一个参数 (start_proc)
+    u64 x1; // 第二个参数 (start_proc)
+    u64 x19;
+    u64 x20;
+    u64 x21;
+    u64 x22;
+    u64 x23;
+    u64 x24;
+    u64 x25;
+    u64 x26;
+    u64 x27;
+    u64 x28;
+    u64 x29; // Frame Pointer
+    u64 x30; // Procedure Link Register
 } KernelContext;
 
-// 调度信息
+// TODO 进程的调度信息
 struct schinfo {
-    // TODO: customize your sched info
-};
+    ListNode sched_node; // 串在调度队列中的结点
+ };
 
 // 进程结构体
 typedef struct Proc {
-    bool killed;  // 是否被终止
-    bool idle;    // 是否为idle进程
+    bool killed; // 是否被终止
+    bool idle;   // 是否为idle进程
 
-    int pid;               // Process ID
-    int exitcode;          // 退出码
-    enum procstate state;  // 进程状态
+    int pid;              // Process ID
+    int exitcode;         // 退出码
+    enum procstate state; // 进程状态
 
-    Semaphore childexit;     // 子进程退出信号量
-    ListNode children;       // 子进程链表
-    ListNode ptnode;         // 所属父进程的链表节点
-    struct Proc* parent;     // 父进程
-    struct schinfo schinfo;  // 调度信息
+    Semaphore childexit;    // 子进程退出信号量
+    ListNode children;      // 子进程链表
+    ListNode ptnode;        // 作为子进程时, 自己串在链表上的节点
+    struct Proc* parent;    // 父进程
 
-    void* kstack;             // 进程内核栈
-    UserContext* ucontext;    // 用户上下文 (trapframe)
-    KernelContext* kcontext;  // 内核上下文
+    struct schinfo schinfo; // 调度信息
+
+    void* kstack;            // 进程内核栈
+    UserContext* ucontext;   // 用户上下文 (进程栈sp)
+    KernelContext* kcontext; // 内核上下文 (进程栈sp)
 } Proc;
+
+
 
 void init_kproc();
 void init_proc(Proc*);
 
-Proc* create_proc();                                 // 创建子进程
-int start_proc(Proc*, void (*entry)(u64), u64 arg);  // 启动子进程
+Proc* create_proc();                                // 创建子进程
+int start_proc(Proc*, void (*entry)(u64), u64 arg); // 启动子进程
 
-NO_RETURN void exit(int code);  // 子进程退出 (弃子的父进程改为root_proc)
-int wait(int* exitcode);        // 父进程等待子进程退出
+NO_RETURN void exit(int code); // 子进程退出 (弃子的父进程改为root_proc)
+int wait(int* exitcode);       // 父进程等待子进程退出

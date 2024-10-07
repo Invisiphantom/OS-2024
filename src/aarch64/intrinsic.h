@@ -25,45 +25,47 @@
  * CPUs (vCPUs). This is essential for operations like starting a secondary
  * vCPU or putting a vCPU into a suspend state.
  */
-static ALWAYS_INLINE u64 psci_fn(u64 id, u64 arg1, u64 arg2, u64 arg3) {
+static ALWAYS_INLINE u64 psci_fn(u64 id, u64 arg1, u64 arg2, u64 arg3)
+{
     u64 result;
 
-    asm volatile(
-        "mov x0, %1\n"
-        "mov x1, %2\n"
-        "mov x2, %3\n"
-        "mov x3, %4\n"
-        "hvc #0\n"
-        "mov %0, x0\n"
-        : "=r"(result)
-        : "r"(id), "r"(arg1), "r"(arg2), "r"(arg3)
-        : "x0", "x1", "x2", "x3");
+    asm volatile("mov x0, %1\n"
+                 "mov x1, %2\n"
+                 "mov x2, %3\n"
+                 "mov x3, %4\n"
+                 "hvc #0\n"
+                 "mov %0, x0\n"
+                 : "=r"(result)
+                 : "r"(id), "r"(arg1), "r"(arg2), "r"(arg3)
+                 : "x0", "x1", "x2", "x3");
 
     return result;
 }
 
-static ALWAYS_INLINE u64 psci_cpu_on(u64 cpuid, u64 ep) {
+static ALWAYS_INLINE u64 psci_cpu_on(u64 cpuid, u64 ep)
+{
     return psci_fn(PSCI_SYSTEM_CPUON, cpuid, ep, 0);
 }
 
-static ALWAYS_INLINE usize cpuid() {
+static ALWAYS_INLINE usize cpuid()
+{
     u64 id;
     asm volatile("mrs %[x], mpidr_el1" : [x] "=r"(id));
     return id & 0xff;
 }
 
 /* Instruct compiler not to reorder instructions around the fence. */
-static ALWAYS_INLINE void compiler_fence() {
-    asm volatile("" ::: "memory");
-}
+static ALWAYS_INLINE void compiler_fence() { asm volatile("" ::: "memory"); }
 
-static ALWAYS_INLINE u64 get_clock_frequency() {
+static ALWAYS_INLINE u64 get_clock_frequency()
+{
     u64 result;
     asm volatile("mrs %[freq], cntfrq_el0" : [freq] "=r"(result));
     return result;
 }
 
-static ALWAYS_INLINE u64 get_timestamp() {
+static ALWAYS_INLINE u64 get_timestamp()
+{
     u64 result;
     compiler_fence();
     asm volatile("mrs %[cnt], cntpct_el0" : [cnt] "=r"(result));
@@ -72,16 +74,13 @@ static ALWAYS_INLINE u64 get_timestamp() {
 }
 
 /* Instruction synchronization barrier. */
-static ALWAYS_INLINE void arch_isb() {
-    asm volatile("isb" ::: "memory");
-}
+static ALWAYS_INLINE void arch_isb() { asm volatile("isb" ::: "memory"); }
 
 /* Data synchronization barrier. */
-static ALWAYS_INLINE void arch_dsb_sy() {
-    asm volatile("dsb sy" ::: "memory");
-}
+static ALWAYS_INLINE void arch_dsb_sy() { asm volatile("dsb sy" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_fence() {
+static ALWAYS_INLINE void arch_fence()
+{
     arch_dsb_sy();
     arch_isb();
 }
@@ -93,13 +92,15 @@ static ALWAYS_INLINE void arch_fence() {
  * nGnRnE (Non-Gathering, Non-Reordering, on-Early Write Acknowledgement)
  * in the `kernel_pt_level0`.
  */
-static ALWAYS_INLINE void device_put_u32(u64 addr, u32 value) {
+static ALWAYS_INLINE void device_put_u32(u64 addr, u32 value)
+{
     compiler_fence();
     *(volatile u32*)addr = value;
     compiler_fence();
 }
 
-static ALWAYS_INLINE u32 device_get_u32(u64 addr) {
+static ALWAYS_INLINE u32 device_get_u32(u64 addr)
+{
     compiler_fence();
     u32 value = *(volatile u32*)addr;
     compiler_fence();
@@ -107,7 +108,8 @@ static ALWAYS_INLINE u32 device_get_u32(u64 addr) {
 }
 
 /* Read Exception Syndrome Register (EL1). */
-static ALWAYS_INLINE u64 arch_get_esr() {
+static ALWAYS_INLINE u64 arch_get_esr()
+{
     u64 result;
     arch_fence();
     asm volatile("mrs %[x], esr_el1" : [x] "=r"(result));
@@ -116,14 +118,16 @@ static ALWAYS_INLINE u64 arch_get_esr() {
 }
 
 /* Reset Exception Syndrome Register (EL1) to zero. */
-static ALWAYS_INLINE void arch_reset_esr() {
+static ALWAYS_INLINE void arch_reset_esr()
+{
     arch_fence();
     asm volatile("msr esr_el1, %[x]" : : [x] "r"(0ll));
     arch_fence();
 }
 
 /* Read Exception Link Register (EL1). */
-static ALWAYS_INLINE u64 arch_get_elr() {
+static ALWAYS_INLINE u64 arch_get_elr()
+{
     u64 result;
     arch_fence();
     asm volatile("mrs %[x], elr_el1" : [x] "=r"(result));
@@ -132,28 +136,32 @@ static ALWAYS_INLINE u64 arch_get_elr() {
 }
 
 /* Set vector base (virtual) address register (EL1). */
-static ALWAYS_INLINE void arch_set_vbar(void* ptr) {
+static ALWAYS_INLINE void arch_set_vbar(void* ptr)
+{
     arch_fence();
     asm volatile("msr vbar_el1, %[x]" : : [x] "r"(ptr));
     arch_fence();
 }
 
 /* Flush TLB entries. */
-static ALWAYS_INLINE void arch_tlbi_vmalle1is() {
+static ALWAYS_INLINE void arch_tlbi_vmalle1is()
+{
     arch_fence();
     asm volatile("tlbi vmalle1is");
     arch_fence();
 }
 
 /* Set Translation Table Base Register 0 (EL1). */
-static ALWAYS_INLINE void arch_set_ttbr0(u64 addr) {
+static ALWAYS_INLINE void arch_set_ttbr0(u64 addr)
+{
     arch_fence();
     asm volatile("msr ttbr0_el1, %[x]" : : [x] "r"(addr));
     arch_tlbi_vmalle1is();
 }
 
 /* Get Translation Table Base Register 0 (EL1). */
-static inline u64 arch_get_ttbr0() {
+static inline u64 arch_get_ttbr0()
+{
     u64 result;
     arch_fence();
     asm volatile("mrs %[x], ttbr0_el1" : [x] "=r"(result));
@@ -162,14 +170,16 @@ static inline u64 arch_get_ttbr0() {
 }
 
 /* Set Translation Table Base Register 1 (EL1). */
-static ALWAYS_INLINE void arch_set_ttbr1(u64 addr) {
+static ALWAYS_INLINE void arch_set_ttbr1(u64 addr)
+{
     arch_fence();
     asm volatile("msr ttbr1_el1, %[x]" : : [x] "r"(addr));
     arch_tlbi_vmalle1is();
 }
 
 /* Read Fault Address Register. */
-static inline u64 arch_get_far() {
+static inline u64 arch_get_far()
+{
     u64 result;
     arch_fence();
     asm volatile("mrs %[x], far_el1" : [x] "=r"(result));
@@ -177,20 +187,23 @@ static inline u64 arch_get_far() {
     return result;
 }
 
-static inline u64 arch_get_tid() {
+static inline u64 arch_get_tid()
+{
     u64 tid;
     asm volatile("mrs %[x], tpidr_el1" : [x] "=r"(tid));
     return tid;
 }
 
-static inline void arch_set_tid(u64 tid) {
+static inline void arch_set_tid(u64 tid)
+{
     arch_fence();
     asm volatile("msr tpidr_el1, %[x]" : : [x] "r"(tid));
     arch_fence();
 }
 
 /* Get User Stack Pointer. */
-static inline u64 arch_get_usp() {
+static inline u64 arch_get_usp()
+{
     u64 usp;
     arch_fence();
     asm volatile("mrs %[x], sp_el0" : [x] "=r"(usp));
@@ -199,55 +212,54 @@ static inline u64 arch_get_usp() {
 }
 
 /* Set User Stack Pointer. */
-static inline void arch_set_usp(u64 usp) {
+static inline void arch_set_usp(u64 usp)
+{
     arch_fence();
     asm volatile("msr sp_el0, %[x]" : : [x] "r"(usp));
     arch_fence();
 }
 
-static inline u64 arch_get_tid0() {
+static inline u64 arch_get_tid0()
+{
     u64 tid;
     asm volatile("mrs %[x], tpidr_el0" : [x] "=r"(tid));
     return tid;
 }
 
-static inline void arch_set_tid0(u64 tid) {
+static inline void arch_set_tid0(u64 tid)
+{
     arch_fence();
     asm volatile("msr tpidr_el0, %[x]" : : [x] "r"(tid));
     arch_fence();
 }
 
-static ALWAYS_INLINE void arch_sev() {
-    asm volatile("sev" ::: "memory");
-}
+static ALWAYS_INLINE void arch_sev() { asm volatile("sev" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_wfe() {
-    asm volatile("wfe" ::: "memory");
-}
+static ALWAYS_INLINE void arch_wfe() { asm volatile("wfe" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_wfi() {
-    asm volatile("wfi" ::: "memory");
-}
+static ALWAYS_INLINE void arch_wfi() { asm volatile("wfi" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_yield() {
-    asm volatile("yield" ::: "memory");
-}
+static ALWAYS_INLINE void arch_yield() { asm volatile("yield" ::: "memory"); }
 
-static ALWAYS_INLINE u64 get_cntv_ctl_el0() {
+static ALWAYS_INLINE u64 get_cntv_ctl_el0()
+{
     u64 c;
     asm volatile("mrs %0, cntv_ctl_el0" : "=r"(c));
     return c;
 }
 
-static ALWAYS_INLINE void set_cntv_ctl_el0(u64 c) {
+static ALWAYS_INLINE void set_cntv_ctl_el0(u64 c)
+{
     asm volatile("msr cntv_ctl_el0, %0" : : "r"(c));
 }
 
-static ALWAYS_INLINE void set_cntv_tval_el0(u64 t) {
+static ALWAYS_INLINE void set_cntv_tval_el0(u64 t)
+{
     asm volatile("msr cntv_tval_el0, %0" : : "r"(t));
 }
 
-static inline bool _arch_enable_trap() {
+static inline bool _arch_enable_trap()
+{
     u64 t;
     asm volatile("mrs %[x], daif" : [x] "=r"(t));
     if (t == 0)
@@ -256,7 +268,8 @@ static inline bool _arch_enable_trap() {
     return false;
 }
 
-static inline bool _arch_disable_trap() {
+static inline bool _arch_disable_trap()
+{
     u64 t;
     asm volatile("mrs %[x], daif" : [x] "=r"(t));
     if (t != 0)
@@ -265,15 +278,20 @@ static inline bool _arch_disable_trap() {
     return true;
 }
 
-#define arch_with_trap for (int __t_i = (_arch_enable_trap(), 0); __t_i < 1; __t_i++, _arch_disable_trap())
+#define arch_with_trap                                                         \
+    for (int __t_i = (_arch_enable_trap(), 0); __t_i < 1;                      \
+         __t_i++, _arch_disable_trap())
 
-static ALWAYS_INLINE NO_RETURN void arch_stop_cpu() {
+static ALWAYS_INLINE NO_RETURN void arch_stop_cpu()
+{
     while (1)
         arch_wfe();
 }
 
-#define set_return_addr(addr) \
-    (compiler_fence(), ((volatile u64*)__builtin_frame_address(0))[1] = (u64)(addr), compiler_fence())
+#define set_return_addr(addr)                                                  \
+    (compiler_fence(),                                                         \
+        ((volatile u64*)__builtin_frame_address(0))[1] = (u64)(addr),          \
+        compiler_fence())
 
 void delay_us(u64 n);
 u64 psci_cpu_on(u64 cpuid, u64 ep);

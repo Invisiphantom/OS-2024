@@ -1,6 +1,7 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
+        "*.S": "arm",
         "string.h": "c",
         "unistd.h": "c",
         "test.h": "c",
@@ -18,6 +19,10 @@
         "sem.h": "c",
         "rbtree.h": "c",
         "cstdlib": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "compare": "c",
+        "type_traits": "c",
+        "cpu.h": "c",
+        "sched.h": "c"
     }
 }

@@ -5,6 +5,7 @@
 #include <kernel/mem.h>
 #include <kernel/printk.h>
 #include <common/defines.h>
+#include <common/string.h>
 
 RefCount kalloc_page_cnt;
 static SpinLock kalloc_page_lock;
@@ -18,31 +19,32 @@ struct FreePage {
 
 // Slab分配器 (静态数组)
 struct SlabAllocator {
-    SpinLock list_lock;        // 分配器自旋锁
-    struct SlabPage* partial;  // 部分页链表
-    struct SlabPage* full;     // 完全页链表
-    u16 obj_size;              // 对象长度
+    SpinLock list_lock; // 分配器自旋锁
+    struct SlabPage* partial; // 部分页链表
+    struct SlabPage* full; // 完全页链表
+    u16 obj_size; // 对象长度
 };
 
-#define SA_TYPES 32  // Slab分配器种类数
+#define SA_TYPES 32 // Slab分配器种类数
 static struct SlabAllocator SA[SA_TYPES];
-static const u16 SA_SIZES[] = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072};
+static const u16 SA_SIZES[SA_TYPES] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072 };
 
 // Slab页 (双向链表)
 struct SlabPage {
-    u8 sa_type;                // 所属的分配器类型
-    u16 obj_cnt;               // 已分配对象数量
-    u16 free_obj_head_offset;  // 首对象偏移位置
-    struct SlabPage* prev;     // 上一个Slab页
-    struct SlabPage* next;     // 下一个Slab页
+    u8 sa_type; // 所属的分配器类型
+    u16 obj_cnt; // 已分配对象数量
+    u16 free_obj_head_offset; // 首对象偏移位置
+    struct SlabPage* prev; // 上一个Slab页
+    struct SlabPage* next; // 下一个Slab页
 };
 
 // Slab对象 (单向链表)
 struct SlabObj {
-    u16 next_offset;  // (2bytes)
+    u16 next_offset; // (2bytes)
 };
 
-void kinit() {
+void kinit()
+{
     init_rc(&kalloc_page_cnt);
     init_spinlock(&kalloc_page_lock);
 
@@ -56,7 +58,7 @@ void kinit() {
         page = (struct FreePage*)p;
         page->next = (struct FreePage*)(p + PAGE_SIZE);
     }
-    page->next = NULL;  // 末尾页的next指针为NULL
+    page->next = NULL; // 末尾页的next指针为NULL
 
     // 初始化所有Slab分配器
     for (int i = 0; i < SA_TYPES; i++) {
@@ -67,7 +69,8 @@ void kinit() {
     }
 }
 
-void* kalloc_page() {
+void* kalloc_page()
+{
     increment_rc(&kalloc_page_cnt);
     acquire_spinlock(&kalloc_page_lock);
 
@@ -78,7 +81,8 @@ void* kalloc_page() {
     return page;
 }
 
-void kfree_page(void* p) {
+void kfree_page(void* p)
+{
     decrement_rc(&kalloc_page_cnt);
     acquire_spinlock(&kalloc_page_lock);
 
@@ -90,10 +94,11 @@ void kfree_page(void* p) {
     return;
 }
 
-void* kalloc(unsigned long long size) {
+void* kalloc(unsigned long long size)
+{
     for (int i = 0; i < SA_TYPES; i++) {
         if (size > SA[i].obj_size)
-            continue;  // 如果分配器过短，则跳过
+            continue; // 如果分配器过短，则跳过
 
         acquire_spinlock(&SA[i].list_lock);
         struct SlabPage* page = SA[i].partial;
@@ -101,10 +106,11 @@ void* kalloc(unsigned long long size) {
         // 如果没有可用页，则分配新页
         if (page == NULL) {
             page = (struct SlabPage*)kalloc_page();
-            page->sa_type = i;  // 所属分配器类型
-            page->obj_cnt = 0;  // 无已分配对象
-            page->prev = NULL;  // 无前页
-            page->next = NULL;  // 无后页
+            memset(page, 0, PAGE_SIZE);
+            page->sa_type = i; // 所属分配器类型
+            page->obj_cnt = 0; // 无已分配对象
+            page->prev = NULL; // 无前页
+            page->next = NULL; // 无后页
 
             // 首对象 偏移位置 (地址对齐)
             page->free_obj_head_offset = sizeof(struct SlabPage);
@@ -116,9 +122,10 @@ void* kalloc(unsigned long long size) {
                 obj = (struct SlabObj*)((u64)page + obj_offset);
                 obj->next_offset = obj_offset + SA[i].obj_size;
             }
-            obj->next_offset = NULL;  // 末尾对象的next指针为NULL
+            obj->next_offset = NULL; // 末尾对象的next指针为NULL
 
             // 更新 部分链表首页
+            page->next = SA[i].partial;
             SA[i].partial = page;
         }
 
@@ -146,7 +153,8 @@ void* kalloc(unsigned long long size) {
     return NULL;
 }
 
-void kfree(void* ptr) {
+void kfree(void* ptr)
+{
     auto obj = (struct SlabObj*)ptr;
     auto page = (struct SlabPage*)((u64)obj & ~(PAGE_SIZE - 1));
 
@@ -154,6 +162,7 @@ void kfree(void* ptr) {
 
     obj->next_offset = page->free_obj_head_offset;
     page->free_obj_head_offset = (u16)((u64)obj - (u64)page);
+    page->obj_cnt--;
 
     // 如果此时页在完全链表, 则将其移至部分链表
     if (obj->next_offset == NULL) {

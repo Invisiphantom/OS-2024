@@ -23,7 +23,7 @@ void set_cpu_on() {
     
     // 启用当前CPU
     cpus[cpuid()].online = true;
-    
+
     // 打印欢迎信息
     printk("CPU %lld: hello\n", cpuid());
 }
