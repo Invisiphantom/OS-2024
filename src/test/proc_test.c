@@ -16,9 +16,13 @@ static Semaphore s1, s2, s3, s4, s5, s6;
 // 8: 90-99 V(s3) P(s4) get_all
 // 9: 100-109 P(s5) V(s6) post
 
+// #define DEBUG
+
 static void proc_test_1b(u64 a)
 {
+#ifdef DEBUG
     printk("- pid=%d: proc_test_1b\ta=%lld\n\n", thisproc()->pid, a);
+#endif
 
     switch (a / 10 - 1) {
 
@@ -64,7 +68,9 @@ static void proc_test_1b(u64 a)
 
 static void proc_test_1a(u64 a)
 {
+#ifdef DEBUG
     printk("\n- pid=%d: proc_test_1a\ta=%lld\n\n", thisproc()->pid, a);
+#endif
 
     // 再接着创建10个子进程
     for (int i = 0; i < 10; i++) {
@@ -138,7 +144,9 @@ static void proc_test_1a(u64 a)
 
 static void proc_test_1()
 {
+#ifdef DEBUG
     printk("\n- pid=%d: proc_test_1\n\n", thisproc()->pid);
+#endif
 
     init_sem(&s1, 0);
     init_sem(&s2, 0);
@@ -161,7 +169,9 @@ static void proc_test_1()
         int code, id;
         id = wait(&code);
         ASSERT(pid[code] == id);
+#ifdef DEBUG
         printk(">>>>>>>> proc_test_1a-case %d exit <<<<<<<<\n\n", code);
+#endif
     }
 
     exit(0); // 退出码为0

@@ -21,11 +21,11 @@ void init_sched()
     queue_init(&sched_queue);   // 初始化调度队列
 }
 
-// 返回当前CPU上执行的进程
-Proc* thisproc() { return thiscpu->sched.proc; }
-
 // 为每个新进程 初始化自定义的schinfo
 void init_schinfo(struct schinfo* p) { return; }
+
+// 返回当前CPU上执行的进程
+Proc* thisproc() { return thiscpu->sched.proc; }
 
 // 调用schd()之前, 需要获取sched_lock
 void acquire_sched_lock() { acquire_spinlock(&sched_lock); }
@@ -34,7 +34,7 @@ void release_sched_lock() { release_spinlock(&sched_lock); }
 // 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
 // 如果进程状态是 SLEEPING/UNUSED:  将进程状态设置为 RUNNABLE 并将其添加到调度队列
-// 其他情况 : panic
+// 其他情况: panic
 bool activate_proc(Proc* p)
 {
     if (p->state == RUNNING || p->state == RUNNABLE)

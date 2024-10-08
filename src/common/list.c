@@ -114,6 +114,7 @@ void queue_pop(Queue* x)
     x->sz--;
 }
 
+// 从队列x中移除结点item (需持有队列锁)
 void queue_detach(Queue* x, ListNode* item)
 {
     if (x->sz == 0)

@@ -6,16 +6,12 @@
 
 volatile bool panic_flag;
 
+// main 函数跳转到这里
 NO_RETURN void idle_entry()
 {
     set_cpu_on();
 
     while (1) {
-        // if (cpuid() == 1)
-        //     for (;;) {
-        //         arch_with_trap { arch_wfi(); }
-        //     }
-
         acquire_sched_lock();
         sched(RUNNABLE);
 
@@ -26,7 +22,6 @@ NO_RETURN void idle_entry()
     }
 
     set_cpu_off();
-
     arch_stop_cpu();
 }
 
