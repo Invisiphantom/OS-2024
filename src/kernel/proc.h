@@ -10,8 +10,32 @@ enum procstate { UNUSED, RUNNABLE, RUNNING, SLEEPING, ZOMBIE };
 
 // TODO 用户进程上下文
 typedef struct UserContext {
-    u64 x0; // 第一个参数 (start_proc)
-    u64 x1; // 第二个参数 (start_proc)
+
+    // Special Regs
+    u64 sp_el0;    // Stack Pointer
+    u64 spsr_el1;  // Program Status Register
+    u64 elr_el1;   // Exception Link Register
+
+    // General Regs
+    u64 x0;
+    u64 x1;
+    u64 x2;
+    u64 x3;
+    u64 x4;
+    u64 x5;
+    u64 x6;
+    u64 x7;
+    u64 x8;
+    u64 x9;
+    u64 x10;
+    u64 x11;
+    u64 x12;
+    u64 x13;
+    u64 x14;
+    u64 x15;
+    u64 x16;
+    u64 x17;
+    u64 x18;
     u64 x19;
     u64 x20;
     u64 x21;
@@ -22,8 +46,8 @@ typedef struct UserContext {
     u64 x26;
     u64 x27;
     u64 x28;
-    u64 x29; // Frame Pointer
-    u64 x30; // Procedure Link Register
+    u64 x29;  // Frame Pointer
+    u64 x30;  // Procedure Link Register
 } UserContext;
 
 // TODO 内核进程上下文

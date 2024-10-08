@@ -25,7 +25,7 @@ void init_sched()
 Proc* thisproc() { return thiscpu->sched.proc; }
 
 // TODO: 为每个新进程 初始化自定义的schinfo
-void init_schinfo(struct schinfo* p) { }
+void init_schinfo(struct schinfo* p) { return; }
 
 // 调用schd()之前, 需要获取sched_lock
 void acquire_sched_lock() { acquire_spinlock(&sched_lock); }
@@ -86,18 +86,35 @@ static void update_this_state(enum procstate new_state)
 // 如果没有可运行的进程则返回idle
 static Proc* pick_next()
 {
-    // 如果没有可运行进程, 则返回idle
+    // 如果调度队列中没有进程, 则返回idle
     if (queue_empty(&sched_queue))
         return thiscpu->sched.idle_proc;
 
-    // 选择队列头的进程
-    auto node = queue_front(&sched_queue);
-    auto p = container_of(node, Proc, schinfo.sched_node);
+    queue_lock(&sched_queue); // 获取调度队列锁
 
-    // 将该进程从队列头 移动到 队列尾
-    queue_rotate_lock(&sched_queue);
+    ListNode* node = queue_front(&sched_queue);
+    for (;;) {
+        auto node_next = node->next;
+        auto p = container_of(node, Proc, schinfo.sched_node);
 
-    return p;
+        if (p->state == RUNNABLE) {
+            // 将该进程 移动到 队列尾
+            queue_detach(&sched_queue, node);
+            queue_push(&sched_queue, node);
+            queue_unlock(&sched_queue);
+            return p;
+        }
+
+        if (node_next == queue_front(&sched_queue))
+            break;
+        else
+            node = node_next;
+    }
+
+    queue_unlock(&sched_queue); // 释放调度队列锁
+
+    // 如果没有 RUNNABLE 进程, 则返回idle
+    return thiscpu->sched.idle_proc;
 }
 
 // TODO: 将进程p更新为CPU选择的进程
@@ -107,7 +124,6 @@ static void update_this_proc(Proc* p)
 
     auto c = thiscpu;
     c->sched.proc = p;
-    p->state = RUNNABLE;
 
     release_spinlock(&proc_lock);
 }

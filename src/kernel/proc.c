@@ -67,7 +67,6 @@ void init_proc(Proc* p)
 
     // 栈从高地址向低地址增长
     p->kstack = kalloc_page() + PAGE_SIZE;
-    p->ucontext = kalloc_page() + PAGE_SIZE - sizeof(UserContext);
     p->kcontext = kalloc_page() + PAGE_SIZE - sizeof(KernelContext);
 
     release_spinlock(&proc_lock);
@@ -157,7 +156,6 @@ int wait(int* exitcode)
                 _detach_from_list(&pp->ptnode);
 
                 kfree_page((void*)round_up((u64)pp->kstack - PAGE_SIZE, PAGE_SIZE));
-                kfree_page((void*)round_up((u64)pp->ucontext - PAGE_SIZE, PAGE_SIZE));
                 kfree_page((void*)round_up((u64)pp->kcontext - PAGE_SIZE, PAGE_SIZE));
                 kfree(pp);
 

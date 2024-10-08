@@ -38,11 +38,14 @@ void interrupt_global_handler()
         return;
     }
 
+    // set_interrupt_handler(TIMER_IRQ, timerintr);
     if (int_handler[intid])
         int_handler[intid](intid);
 
     gic_eoi(iar);
 
-    if (intid == TIMER_IRQ)
-        yield();
+    if (intid == TIMER_IRQ) {
+        acquire_sched_lock();
+        sched(RUNNABLE);
+    }
 }

@@ -15,31 +15,27 @@ ListNode* _insert_into_list(ListNode* list, ListNode* node);
 ListNode* _detach_from_list(ListNode* node);
 bool _empty_list(ListNode* list);
 
-
-
-
-
 // * List operations with locks
-#define merge_list(lock, node1, node2)                                         \
-    ({                                                                         \
-        acquire_spinlock(lock);                                                \
-        ListNode* __t = _merge_list(node1, node2);                             \
-        release_spinlock(lock);                                                \
-        __t;                                                                   \
+#define merge_list(lock, node1, node2)                                                   \
+    ({                                                                                   \
+        acquire_spinlock(lock);                                                          \
+        ListNode* __t = _merge_list(node1, node2);                                       \
+        release_spinlock(lock);                                                          \
+        __t;                                                                             \
     })
-#define insert_into_list(lock, list, node)                                     \
-    ({                                                                         \
-        acquire_spinlock(lock);                                                \
-        ListNode* __t = _insert_into_list(list, node);                         \
-        release_spinlock(lock);                                                \
-        __t;                                                                   \
+#define insert_into_list(lock, list, node)                                               \
+    ({                                                                                   \
+        acquire_spinlock(lock);                                                          \
+        ListNode* __t = _insert_into_list(list, node);                                   \
+        release_spinlock(lock);                                                          \
+        __t;                                                                             \
     })
-#define detach_from_list(lock, node)                                           \
-    ({                                                                         \
-        acquire_spinlock(lock);                                                \
-        ListNode* __t = _detach_from_list(node);                               \
-        release_spinlock(lock);                                                \
-        __t;                                                                   \
+#define detach_from_list(lock, node)                                                     \
+    ({                                                                                   \
+        acquire_spinlock(lock);                                                          \
+        ListNode* __t = _detach_from_list(node);                                         \
+        release_spinlock(lock);                                                          \
+        __t;                                                                             \
     })
 
 // -------------------------------- Queue -------------------------------- //
@@ -61,31 +57,30 @@ void queue_rotate(Queue* x);
 ListNode* queue_front(Queue* x);
 bool queue_empty(Queue* x);
 
-#define queue_push_lock(x, item)                                               \
-    ({                                                                         \
-        queue_lock(x);                                                         \
-        queue_push(x, item);                                                   \
-        queue_unlock(x);                                                       \
+#define queue_push_lock(x, item)                                                         \
+    ({                                                                                   \
+        queue_lock(x);                                                                   \
+        queue_push(x, item);                                                             \
+        queue_unlock(x);                                                                 \
     })
-#define queue_pop_lock(x)                                                      \
-    ({                                                                         \
-        queue_lock(x);                                                         \
-        queue_pop(x);                                                          \
-        queue_unlock(x);                                                       \
+#define queue_pop_lock(x)                                                                \
+    ({                                                                                   \
+        queue_lock(x);                                                                   \
+        queue_pop(x);                                                                    \
+        queue_unlock(x);                                                                 \
     })
-#define queue_detach_lock(x, item)                                             \
-    ({                                                                         \
-        queue_lock(x);                                                         \
-        queue_detach(x, item);                                                 \
-        queue_unlock(x);                                                       \
+#define queue_detach_lock(x, item)                                                       \
+    ({                                                                                   \
+        queue_lock(x);                                                                   \
+        queue_detach(x, item);                                                           \
+        queue_unlock(x);                                                                 \
     })
-#define queue_rotate_lock(x)                                                   \
-    ({                                                                         \
-        queue_lock(x);                                                         \
-        queue_rotate(x);                                                       \
-        queue_unlock(x);                                                       \
+#define queue_rotate_lock(x)                                                             \
+    ({                                                                                   \
+        queue_lock(x);                                                                   \
+        queue_rotate(x);                                                                 \
+        queue_unlock(x);                                                                 \
     })
-
 
 // -------------------------------- QueueNode -------------------------------- //
 

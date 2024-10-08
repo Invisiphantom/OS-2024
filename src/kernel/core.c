@@ -8,10 +8,14 @@ volatile bool panic_flag;
 
 NO_RETURN void idle_entry()
 {
-
     set_cpu_on();
 
     while (1) {
+        // if (cpuid() == 0)
+        //     for (;;) {
+        //         arch_with_trap { arch_wfi(); }
+        //     }
+
         acquire_sched_lock();
         sched(RUNNABLE);
 
@@ -26,19 +30,16 @@ NO_RETURN void idle_entry()
     arch_stop_cpu();
 }
 
-// NO_RETURN void idle_entry() {
-//     kalloc_test();
-//     arch_stop_cpu();
-// }
-
 // root_proc 进程跳转到这里
 NO_RETURN void kernel_entry()
 {
     printk("Hello world! (Core %lld)\n", cpuid());
     proc_test();
 
-    while (1)
-        yield();
+    while (1) {
+        acquire_sched_lock();
+        sched(RUNNABLE);
+    }
 }
 
 NO_INLINE NO_RETURN void _panic(const char* file, int line)
