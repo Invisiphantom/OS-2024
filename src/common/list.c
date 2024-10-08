@@ -130,14 +130,6 @@ void queue_detach(Queue* x, ListNode* item)
     x->sz--;
 }
 
-void queue_rotate(Queue* x)
-{
-    if (x->sz <= 1)
-        return;
-
-    x->begin = x->begin->next;
-    x->end = x->end->next;
-}
 
 // 返回队列x的头部结点
 ListNode* queue_front(Queue* x)

@@ -53,7 +53,6 @@ void queue_unlock(Queue* x);
 void queue_push(Queue* x, ListNode* item);
 void queue_pop(Queue* x);
 void queue_detach(Queue* x, ListNode* item);
-void queue_rotate(Queue* x);
 ListNode* queue_front(Queue* x);
 bool queue_empty(Queue* x);
 
@@ -73,12 +72,6 @@ bool queue_empty(Queue* x);
     ({                                                                                   \
         queue_lock(x);                                                                   \
         queue_detach(x, item);                                                           \
-        queue_unlock(x);                                                                 \
-    })
-#define queue_rotate_lock(x)                                                             \
-    ({                                                                                   \
-        queue_lock(x);                                                                   \
-        queue_rotate(x);                                                                 \
         queue_unlock(x);                                                                 \
     })
 

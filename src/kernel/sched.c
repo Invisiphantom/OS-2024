@@ -14,36 +14,27 @@ static Queue sched_queue;   // 调度队列
 
 extern void swtch(KernelContext** old_ctx, KernelContext* new_ctx);
 
-// TODO: 初始化调度器
+// 初始化调度器
 void init_sched()
 {
     init_spinlock(&sched_lock); // 初始化调度锁
     queue_init(&sched_queue);   // 初始化调度队列
 }
 
-// TODO: 返回当前CPU上执行的进程
+// 返回当前CPU上执行的进程
 Proc* thisproc() { return thiscpu->sched.proc; }
 
-// TODO: 为每个新进程 初始化自定义的schinfo
+// 为每个新进程 初始化自定义的schinfo
 void init_schinfo(struct schinfo* p) { return; }
 
 // 调用schd()之前, 需要获取sched_lock
 void acquire_sched_lock() { acquire_spinlock(&sched_lock); }
 void release_sched_lock() { release_spinlock(&sched_lock); }
 
-// 判断进程p是否为ZOOMBIE状态
-bool is_zombie(Proc* p)
-{
-    acquire_sched_lock();
-    bool r = (p->state == ZOMBIE);
-    release_sched_lock();
-    return r;
-}
-
-// TODO: 唤醒进程
+// 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
-// 如果进程状态是 SLEEPING/UNUSED:  将进程状态设置为 RUNNABLE
-// 并将其添加到调度队列 其他情况 : panic
+// 如果进程状态是 SLEEPING/UNUSED:  将进程状态设置为 RUNNABLE 并将其添加到调度队列
+// 其他情况 : panic
 bool activate_proc(Proc* p)
 {
     if (p->state == RUNNING || p->state == RUNNABLE)
@@ -66,7 +57,7 @@ bool activate_proc(Proc* p)
     return false;
 }
 
-// TODO: 更新当前进程的状态为new_state
+// 更新当前进程的状态为new_state
 static void update_this_state(enum procstate new_state)
 {
     acquire_spinlock(&proc_lock);
@@ -82,7 +73,7 @@ static void update_this_state(enum procstate new_state)
     release_spinlock(&proc_lock);
 }
 
-// TODO: 从调度队列中挑选进程
+// 从调度队列中挑选进程
 // 如果没有可运行的进程则返回idle
 static Proc* pick_next()
 {
@@ -92,6 +83,7 @@ static Proc* pick_next()
 
     queue_lock(&sched_queue); // 获取调度队列锁
 
+    // 遍历调度队列, 选择第一个 RUNNABLE 进程
     ListNode* node = queue_front(&sched_queue);
     for (;;) {
         auto node_next = node->next;
@@ -105,6 +97,8 @@ static Proc* pick_next()
             return p;
         }
 
+        // 如果遍历完所有进程, 则break
+        // 否则继续遍历下一个进程
         if (node_next == queue_front(&sched_queue))
             break;
         else
@@ -117,7 +111,7 @@ static Proc* pick_next()
     return thiscpu->sched.idle_proc;
 }
 
-// TODO: 将进程p更新为CPU选择的进程
+// 将进程p更新为CPU选择的进程
 static void update_this_proc(Proc* p)
 {
     acquire_spinlock(&proc_lock);

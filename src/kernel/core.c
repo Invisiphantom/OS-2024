@@ -11,7 +11,7 @@ NO_RETURN void idle_entry()
     set_cpu_on();
 
     while (1) {
-        // if (cpuid() == 0)
+        // if (cpuid() == 1)
         //     for (;;) {
         //         arch_with_trap { arch_wfi(); }
         //     }
