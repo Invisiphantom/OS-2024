@@ -150,6 +150,7 @@ void* kalloc(unsigned long long size)
     }
 
     printk("kalloc: out of memory\n");
+    PANIC();
     return NULL;
 }
 
@@ -180,21 +181,6 @@ void kfree(void* ptr)
         page->prev = NULL;
         page->next = SA[page->sa_type].partial;
         SA[page->sa_type].partial = page;
-    }
-
-    // 如果此时页已空, 则释放该页
-    if (page->obj_cnt == 0) {
-        if (page->prev != NULL)
-            page->prev->next = page->next;
-        if (page->next != NULL)
-            page->next->prev = page->prev;
-
-        if (SA[page->sa_type].partial == page)
-            SA[page->sa_type].partial = page->next;
-        if (SA[page->sa_type].full == page)
-            SA[page->sa_type].full = page->next;
-
-        kfree_page(page);
     }
 
     release_spinlock(&SA[page->sa_type].list_lock);

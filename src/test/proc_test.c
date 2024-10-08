@@ -18,19 +18,25 @@ static Semaphore s1, s2, s3, s4, s5, s6;
 
 static void proc_test_1b(u64 a)
 {
-    printk("\n- pid=%d: proc_test_1b\ta=%lld\n\n", thisproc()->pid, a);
+    printk("- pid=%d: proc_test_1b\ta=%lld\n\n", thisproc()->pid, a);
 
     switch (a / 10 - 1) {
-    case 0:
+
+    case 0: // pass
         break;
+
+    // 进行三次调度
+    // 然后退出唤醒root_proc
     case 1:
         yield();
         yield();
         yield();
         break;
-    case 2:
+
+    case 2: // pass
         post_sem(&s1);
         break;
+
     case 3:
     case 4:
     case 5:
@@ -41,10 +47,12 @@ static void proc_test_1b(u64 a)
         else
             wait_sem(&s2);
         break;
+
     case 8:
         wait_sem(&s3);
         post_sem(&s4);
         break;
+
     case 9:
         post_sem(&s5);
         wait_sem(&s6);
@@ -67,9 +75,9 @@ static void proc_test_1a(u64 a)
 
     switch (a) {
 
-    case 0: {
+    case 0: { // pass
         int t = 0, x;
-        // 等待10个
+        // 等待10个子进程全部结束
         for (int i = 0; i < 10; i++) {
             wait(&x);
             t |= 1 << (x - 10);
@@ -78,13 +86,14 @@ static void proc_test_1a(u64 a)
         ASSERT(wait(&x) == -1);
     } break;
 
-    case 1:
+    case 1: // pass
         break;
 
-    case 2: {
+    case 2: { // pass
         for (int i = 0; i < 10; i++)
             ASSERT(wait_sem(&s1));
-        ASSERT(!get_sem(&s1));
+        // 确保此时信号量为0
+        ASSERT(get_sem(&s1) == false);
     } break;
 
     case 3:
@@ -93,6 +102,7 @@ static void proc_test_1a(u64 a)
     case 6:
     case 7: {
         int x;
+        // 等待10个子进程全部结束
         for (int i = 0; i < 10; i++)
             wait(&x);
         ASSERT(wait(&x) == -1);
@@ -173,7 +183,7 @@ void proc_test()
 
         if (id == pid)
             ASSERT(code == 0);
-        else
+        else // 其他孤儿进程
             t |= 1 << (code - 20);
     }
     ASSERT(t == 1048575);
