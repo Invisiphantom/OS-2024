@@ -67,7 +67,9 @@ bool wait_sem(Semaphore* sem)
 
     acquire_spinlock(&sem->lock); // 重新获取信号量锁
 
-    if (wait->up == false) // 如果未被唤醒 (自己醒来的?)
+    // 如果不是被post_sem唤醒
+    // 例如: exit()将弃子交给root进程并激活
+    if (wait->up == false) 
     {
         sem->val++;
         ASSERT(sem->val <= 0);

@@ -9,7 +9,7 @@
 extern bool panic_flag;
 extern SpinLock proc_lock;
 
-static SpinLock sched_lock; // 调度锁
+static SpinLock sched_lock; // 调度函数锁
 static Queue sched_queue;   // 调度队列
 
 extern void swtch(KernelContext** old_ctx, KernelContext* new_ctx);

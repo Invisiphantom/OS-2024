@@ -43,10 +43,10 @@ typedef unsigned long long u64;
 
 #define KSPACE_MASK 0xFFFF000000000000
 
-// convert kernel address into physical address.
+// 将内核虚拟地址转换为物理内存地址
 #define K2P(addr) ((u64)(addr) - (KSPACE_MASK))
 
-// convert physical address into kernel address.
+// 将物理内存地址转换为内核虚拟地址
 #define P2K(addr) ((u64)(addr) + (KSPACE_MASK))
 
 // convert any address into kernel address space.
