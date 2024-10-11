@@ -9,18 +9,18 @@
 
 void enable_timer()
 {
-    u64 c = get_cntv_ctl_el0();
-    c |= CNTV_CTL_ENABLE;
-    c &= ~CNTV_CTL_IMASK;
-    set_cntv_ctl_el0(c);
+	u64 c = get_cntv_ctl_el0();
+	c |= CNTV_CTL_ENABLE;
+	c &= ~CNTV_CTL_IMASK;
+	set_cntv_ctl_el0(c);
 }
 
 void disable_timer()
 {
-    u64 c = get_cntv_ctl_el0();
-    c &= ~CNTV_CTL_ENABLE;
-    c |= CNTV_CTL_IMASK;
-    set_cntv_ctl_el0(c);
+	u64 c = get_cntv_ctl_el0();
+	c &= ~CNTV_CTL_ENABLE;
+	c |= CNTV_CTL_IMASK;
+	set_cntv_ctl_el0(c);
 }
 
 bool timer_enabled()

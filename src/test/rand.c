@@ -3,6 +3,7 @@
 
 static u64 next[4] = { 1111, 2222, 3333, 4444 };
 
+// 生成32位随机数 (线性同余法)
 unsigned rand(void)
 {
     // RAND_MAX assumed to be 32767

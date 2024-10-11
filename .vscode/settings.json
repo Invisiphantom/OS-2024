@@ -1,0 +1,28 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "*.S": "arm",
+        "string.h": "c",
+        "unistd.h": "c",
+        "test.h": "c",
+        "mem.h": "c",
+        "memlayout.h": "c",
+        "printk.h": "c",
+        "core.h": "c",
+        "intrinsic.h": "c",
+        "mmu.h": "c",
+        "rc.h": "c",
+        "defines.h": "c",
+        "spinlock.h": "c",
+        "stdlib.h": "c",
+        "proc.h": "c",
+        "sem.h": "c",
+        "rbtree.h": "c",
+        "cstdlib": "c",
+        "list.h": "c",
+        "compare": "c",
+        "type_traits": "c",
+        "cpu.h": "c",
+        "sched.h": "c"
+    }
+}

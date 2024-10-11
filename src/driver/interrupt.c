@@ -8,12 +8,14 @@
 
 static InterruptHandler int_handler[NUM_IRQ_TYPES];
 
+// 默认中断处理函数
 static void default_handler(u32 intid)
 {
     printk("[Error CPU %lld]: Interrupt %d not implemented.", cpuid(), intid);
     PANIC();
 }
 
+// 初始化每种中断的处理函数
 void init_interrupt()
 {
     for (usize i = 0; i < NUM_IRQ_TYPES; i++) {

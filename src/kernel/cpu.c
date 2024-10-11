@@ -88,20 +88,30 @@ void set_cpu_on()
     // disable the lower-half address to prevent stupid errors
     extern PTEntries invalid_pt;
     arch_set_ttbr0(K2P(&invalid_pt));
+    
+    // 设置vbar异常处理函数地址
     extern char exception_vector[];
     arch_set_vbar(exception_vector);
+    
+    // 重置esr异常状态信息
     arch_reset_esr();
     init_clock();
     cpus[cpuid()].online = true;
+
+    // 打印欢迎信息
     printk("CPU %lld: hello\n", cpuid());
     hello_timer[cpuid()].elapse = 5000;
     hello_timer[cpuid()].handler = hello;
     set_cpu_timer(&hello_timer[cpuid()]);
 }
 
-void set_cpu_off()
-{
+void set_cpu_off() {
+    // 关闭当前CPU中断
     _arch_disable_trap();
+
+    // 停用当前CPU
     cpus[cpuid()].online = false;
+    
+    // 打印结束信息
     printk("CPU %lld: stopped\n", cpuid());
 }

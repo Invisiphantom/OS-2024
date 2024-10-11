@@ -10,17 +10,17 @@
 /**
  * PSCI (Power State Coordination Interface) function on QEMU's virt platform
  * -------------------------------------------------------------------------
- * This function provides an interface to interact with the PSCI (Power State 
- * Coordination Interface) on ARM architectures, which is particularly useful 
+ * This function provides an interface to interact with the PSCI (Power State
+ * Coordination Interface) on ARM architectures, which is particularly useful
  * in virtualized environments like QEMU's virt platform.
  *
  * Background:
- * PSCI is an ARM-defined interface that allows software running at the highest 
- * privilege level (typically a hypervisor or OS kernel) to manage power states 
- * of CPUs. It includes operations to turn CPUs on or off, put them into a low 
+ * PSCI is an ARM-defined interface that allows software running at the highest
+ * privilege level (typically a hypervisor or OS kernel) to manage power states
+ * of CPUs. It includes operations to turn CPUs on or off, put them into a low
  * power state, or reset them.
  *
- * In a virtualized environment, such as when using QEMU with the virt machine 
+ * In a virtualized environment, such as when using QEMU with the virt machine
  * type, the PSCI interface can be used to control the power states of virtual
  * CPUs (vCPUs). This is essential for operations like starting a secondary
  * vCPU or putting a vCPU into a suspend state.
@@ -55,10 +55,7 @@ static ALWAYS_INLINE usize cpuid()
 }
 
 /* Instruct compiler not to reorder instructions around the fence. */
-static ALWAYS_INLINE void compiler_fence()
-{
-    asm volatile("" ::: "memory");
-}
+static ALWAYS_INLINE void compiler_fence() { asm volatile("" ::: "memory"); }
 
 static ALWAYS_INLINE u64 get_clock_frequency()
 {
@@ -77,16 +74,10 @@ static ALWAYS_INLINE u64 get_timestamp()
 }
 
 /* Instruction synchronization barrier. */
-static ALWAYS_INLINE void arch_isb()
-{
-    asm volatile("isb" ::: "memory");
-}
+static ALWAYS_INLINE void arch_isb() { asm volatile("isb" ::: "memory"); }
 
 /* Data synchronization barrier. */
-static ALWAYS_INLINE void arch_dsb_sy()
-{
-    asm volatile("dsb sy" ::: "memory");
-}
+static ALWAYS_INLINE void arch_dsb_sy() { asm volatile("dsb sy" ::: "memory"); }
 
 static ALWAYS_INLINE void arch_fence()
 {
@@ -104,14 +95,14 @@ static ALWAYS_INLINE void arch_fence()
 static ALWAYS_INLINE void device_put_u32(u64 addr, u32 value)
 {
     compiler_fence();
-    *(volatile u32 *)addr = value;
+    *(volatile u32*)addr = value;
     compiler_fence();
 }
 
 static ALWAYS_INLINE u32 device_get_u32(u64 addr)
 {
     compiler_fence();
-    u32 value = *(volatile u32 *)addr;
+    u32 value = *(volatile u32*)addr;
     compiler_fence();
     return value;
 }
@@ -145,7 +136,7 @@ static ALWAYS_INLINE u64 arch_get_elr()
 }
 
 /* Set vector base (virtual) address register (EL1). */
-static ALWAYS_INLINE void arch_set_vbar(void *ptr)
+static ALWAYS_INLINE void arch_set_vbar(void* ptr)
 {
     arch_fence();
     asm volatile("msr vbar_el1, %[x]" : : [x] "r"(ptr));
@@ -242,25 +233,13 @@ static inline void arch_set_tid0(u64 tid)
     arch_fence();
 }
 
-static ALWAYS_INLINE void arch_sev()
-{
-    asm volatile("sev" ::: "memory");
-}
+static ALWAYS_INLINE void arch_sev() { asm volatile("sev" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_wfe()
-{
-    asm volatile("wfe" ::: "memory");
-}
+static ALWAYS_INLINE void arch_wfe() { asm volatile("wfe" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_wfi()
-{
-    asm volatile("wfi" ::: "memory");
-}
+static ALWAYS_INLINE void arch_wfi() { asm volatile("wfi" ::: "memory"); }
 
-static ALWAYS_INLINE void arch_yield()
-{
-    asm volatile("yield" ::: "memory");
-}
+static ALWAYS_INLINE void arch_yield() { asm volatile("yield" ::: "memory"); }
 
 static ALWAYS_INLINE u64 get_cntv_ctl_el0()
 {
@@ -299,8 +278,8 @@ static inline bool _arch_disable_trap()
     return true;
 }
 
-#define arch_with_trap                                    \
-    for (int __t_i = (_arch_enable_trap(), 0); __t_i < 1; \
+#define arch_with_trap                                                         \
+    for (int __t_i = (_arch_enable_trap(), 0); __t_i < 1;                      \
          __t_i++, _arch_disable_trap())
 
 static ALWAYS_INLINE NO_RETURN void arch_stop_cpu()
@@ -309,10 +288,10 @@ static ALWAYS_INLINE NO_RETURN void arch_stop_cpu()
         arch_wfe();
 }
 
-#define set_return_addr(addr)                                       \
-    (compiler_fence(),                                              \
-     ((volatile u64 *)__builtin_frame_address(0))[1] = (u64)(addr), \
-     compiler_fence())
+#define set_return_addr(addr)                                                  \
+    (compiler_fence(),                                                         \
+        ((volatile u64*)__builtin_frame_address(0))[1] = (u64)(addr),          \
+        compiler_fence())
 
 void delay_us(u64 n);
 u64 psci_cpu_on(u64 cpuid, u64 ep);
