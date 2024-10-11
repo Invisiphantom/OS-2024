@@ -6,7 +6,7 @@
 #include <kernel/proc.h>
 #include <kernel/syscall.h>
 
-void trap_global_handler(UserContext *context)
+void trap_global_handler(UserContext* context)
 {
     thisproc()->ucontext = context;
 
@@ -20,29 +20,33 @@ void trap_global_handler(UserContext *context)
     arch_reset_esr();
 
     switch (ec) {
-    case ESR_EC_UNKNOWN: {
-        if (il)
-            PANIC();
-        else
-            interrupt_global_handler();
-    } break;
-    case ESR_EC_SVC64: {
-        syscall_entry(context);
-    } break;
-    case ESR_EC_IABORT_EL0:
-    case ESR_EC_IABORT_EL1:
-    case ESR_EC_DABORT_EL0:
-    case ESR_EC_DABORT_EL1: {
-        printk("Page fault\n");
-        PANIC();
-    } break;
-    default: {
-        printk("Unknwon exception %llu\n", ec);
-        PANIC();
-    }
-    }
 
-    // TODO: stop killed process while returning to user space
+        case ESR_EC_UNKNOWN: {
+            if (il)
+                PANIC();
+            else
+                interrupt_global_handler();
+        } break;
+
+        case ESR_EC_SVC64: {
+            syscall_entry(context);
+        } break;
+
+        case ESR_EC_IABORT_EL0:
+        case ESR_EC_IABORT_EL1:
+        case ESR_EC_DABORT_EL0:
+        case ESR_EC_DABORT_EL1: {
+            printk("Page fault\n");
+            PANIC();
+        } break;
+
+        default: {
+            printk("Unknwon exception %llu\n", ec);
+            PANIC();
+        }
+    }
+    // TODO: 如果进程有终止标志，返回用户空间时执行exit(-1)
+    // spsr diaf 判断是否是用户进程
 }
 
 NO_RETURN void trap_error_handler(u64 type)

@@ -10,8 +10,8 @@ struct cpu cpus[NCPU];
 
 static bool __timer_cmp(rb_node lnode, rb_node rnode)
 {
-    i64 d = container_of(lnode, struct timer, _node)->_key -
-            container_of(rnode, struct timer, _node)->_key;
+    i64 d = container_of(lnode, struct timer, _node)->_key
+        - container_of(rnode, struct timer, _node)->_key;
     if (d < 0)
         return true;
     if (d == 0)
@@ -53,21 +53,19 @@ static void timer_clock_handler()
     }
 }
 
-void init_clock_handler()
-{
-    set_clock_handler(&timer_clock_handler);
-}
+void init_clock_handler() { set_clock_handler(&timer_clock_handler); }
 
 static struct timer hello_timer[4];
 
-static void hello(struct timer *t)
+static void hello(struct timer* t)
 {
     printk("CPU %lld: living\n", cpuid());
     t->data++;
     set_cpu_timer(&hello_timer[cpuid()]);
 }
 
-void set_cpu_timer(struct timer *timer)
+// 设置CPU计时器中断在elapse时间后触发
+void set_cpu_timer(struct timer* timer)
 {
     timer->triggered = false;
     timer->_key = get_timestamp_ms() + timer->elapse;
@@ -75,7 +73,7 @@ void set_cpu_timer(struct timer *timer)
     __timer_set_clock();
 }
 
-void cancel_cpu_timer(struct timer *timer)
+void cancel_cpu_timer(struct timer* timer)
 {
     ASSERT(!timer->triggered);
     _rb_erase(&timer->_node, &cpus[cpuid()].timer);
@@ -88,11 +86,11 @@ void set_cpu_on()
     // disable the lower-half address to prevent stupid errors
     extern PTEntries invalid_pt;
     arch_set_ttbr0(K2P(&invalid_pt));
-    
+
     // 设置vbar异常处理函数地址
     extern char exception_vector[];
     arch_set_vbar(exception_vector);
-    
+
     // 重置esr异常状态信息
     arch_reset_esr();
     init_clock();
@@ -105,13 +103,14 @@ void set_cpu_on()
     set_cpu_timer(&hello_timer[cpuid()]);
 }
 
-void set_cpu_off() {
+void set_cpu_off()
+{
     // 关闭当前CPU中断
     _arch_disable_trap();
 
     // 停用当前CPU
     cpus[cpuid()].online = false;
-    
+
     // 打印结束信息
     printk("CPU %lld: stopped\n", cpuid());
 }

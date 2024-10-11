@@ -12,7 +12,7 @@ enum procstate { UNUSED, RUNNABLE, RUNNING, SLEEPING, ZOMBIE };
 // 用户进程上下文
 typedef struct UserContext {
     // Special Regs
-    u64 sp_el0;   // Stack Pointer
+    u64 sp_el0;   // Stack Pointer (User)
     u64 spsr_el1; // Program Status Register
     u64 elr_el1;  // Exception Link Register
 

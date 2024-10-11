@@ -3,31 +3,24 @@
 #include <common/string.h>
 #include <aarch64/intrinsic.h>
 
-PTEntriesPtr get_pte(struct pgdir *pgdir, u64 va, bool alloc)
-{
-    // TODO:
-    // Return a pointer to the PTE (Page Table Entry) for virtual address 'va'
-    // If the entry not exists (NEEDN'T BE VALID), allocate it if alloc=true, or return NULL if false.
-    // THIS ROUTINUE GETS THE PTE, NOT THE PAGE DESCRIBED BY PTE.
-    return NULL;
-}
+// TODO: 查找页表, 返回虚拟地址va 对应的页表项
+// alloc  1:分配新页表  0:不进行分配
+PTEntriesPtr get_pte(struct pgdir* pgdir, u64 va, bool alloc) {
+    
+    
+    
+     return NULL; }
 
-void init_pgdir(struct pgdir *pgdir)
-{
-    pgdir->pt = NULL;
+void init_pgdir(struct pgdir* pgdir) { pgdir->pt = NULL; }
 
-    return;
-}
+// TODO: 递归地释放页表页, 但不释放其引用的物理内存
+void free_pgdir(struct pgdir* pgdir) {
+    
+    
+     return; }
 
-void free_pgdir(struct pgdir *pgdir)
-{
-    // TODO:
-    // Free pages used by the page table. If pgdir->pt=NULL, do nothing.
-    // DONT FREE PAGES DESCRIBED BY THE PAGE TABLE
-    return;
-}
-
-void attach_pgdir(struct pgdir *pgdir)
+// 配置低地址页表ttbr0_el1 映射为pgdir
+void attach_pgdir(struct pgdir* pgdir)
 {
     extern PTEntries invalid_pt;
     if (pgdir->pt)

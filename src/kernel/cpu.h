@@ -19,12 +19,13 @@ struct cpu {
 extern struct cpu cpus[NCPU];
 #define thiscpu (&cpus[cpuid()])
 
+// 定时器
 struct timer {
-    bool triggered;
-    int elapse;
+    bool triggered; // 当前是否被触发
+    int elapse;     // 下次触发时间
     u64 _key;
     struct rb_node_ _node;
-    void (*handler)(struct timer *);
+    void (*handler)(struct timer*); // 处理函数
     u64 data;
 };
 
@@ -33,5 +34,5 @@ void init_clock_handler();
 void set_cpu_on();
 void set_cpu_off();
 
-void set_cpu_timer(struct timer *timer);
-void cancel_cpu_timer(struct timer *timer);
+void set_cpu_timer(struct timer* timer);
+void cancel_cpu_timer(struct timer* timer);

@@ -23,6 +23,9 @@
         "compare": "c",
         "type_traits": "c",
         "cpu.h": "c",
-        "sched.h": "c"
+        "sched.h": "c",
+        "syscall.h": "c",
+        "interrupt.h": "c",
+        "timer.h": "c"
     }
 }

@@ -8,17 +8,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverride-init"
 
-void *syscall_table[NR_SYSCALL] = {
+// 系统调用函数映射表
+void* syscall_table[NR_SYSCALL] = {
     [0 ... NR_SYSCALL - 1] = NULL,
-    [SYS_myreport] = (void *)syscall_myreport,
+    [SYS_myreport] = (void*)syscall_myreport,
 };
 
-void syscall_entry(UserContext *context)
-{
-    // TODO
-    // Invoke syscall_table[id] with args and set the return value.
-    // id is stored in x8. args are stored in x0-x5. return value is stored in x0.
-    // be sure to check the range of id. if id >= NR_SYSCALL, panic.
-}
+// TODO: 处理系统调用
+// 调用syscall_table[id] 系统调用编号为x8, 参数为x0-x5, 返回值为x0
+// 确保检查id的范围, 如果id >= NR_SYSCALL 则panic
+void syscall_entry(UserContext* context) { }
 
 #pragma GCC diagnostic pop

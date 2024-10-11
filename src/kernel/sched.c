@@ -37,6 +37,9 @@ void release_sched_lock() { release_spinlock(&sched_lock); }
 // 其他情况: panic
 bool activate_proc(Proc* p)
 {
+    if (p->state == ZOMBIE)
+        return false;
+
     if (p->state == RUNNING || p->state == RUNNABLE)
         return true;
 
@@ -150,7 +153,7 @@ void sched(enum procstate new_state)
     // 将旧上下文压栈 并用this->kcontext保存sp
     // 然后从next->kcontext的sp加载新上下文
     if (next != this) {
-        attach_pgdir(&next->pgdir);
+        attach_pgdir(&next->pgdir); // 切换到进程页表
         swtch(&this->kcontext, next->kcontext);
     }
 
@@ -158,6 +161,7 @@ void sched(enum procstate new_state)
     release_sched_lock();
 }
 
+// proc.c->start_proc 配置进程入口到这里
 u64 proc_entry(void (*entry)(u64), u64 arg)
 {
     // 释放调度锁

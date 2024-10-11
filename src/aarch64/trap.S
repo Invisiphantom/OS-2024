@@ -5,6 +5,7 @@
 .global trap_entry
 trap_entry:
 
+    /* Save registers */
     stp x29, x30, [sp, #-16]!
     stp x27, x28, [sp, #-16]!
     stp x25, x26, [sp, #-16]!
@@ -35,7 +36,7 @@ trap_entry:
 .global trap_return
 trap_return:
 
-    /* Restore registers. */
+    /* Restore registers */
     ldp x1, x2, [sp], #16
     ldp x3, x0, [sp], #16
     msr sp_el0, x1

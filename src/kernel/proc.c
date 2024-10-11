@@ -56,8 +56,13 @@ void init_proc(Proc* p)
     // 初始化调度信息 (暂无)
     init_schinfo(&p->schinfo);
 
+    // 初始化进程页表
+    init_pgdir(&p->pgdir);
+
     // 栈从高地址向低地址增长
     p->kcontext = kalloc_page() + PAGE_SIZE - sizeof(KernelContext);
+    p->ucontext = kalloc_page() + PAGE_SIZE - sizeof(UserContext);
+    p->ucontext->sp_el0 = (u64)p->ucontext;
 
     release_spinlock(&proc_lock);
 }
@@ -149,8 +154,12 @@ int wait(int* exitcode)
                 // 将子进程 从父进程的子进程链表中移除
                 _detach_from_list(&pp->ptnode);
 
+                // 递归释放页表页映射
+                free_pgdir(&pp->pgdir);
+
                 // 释放进程栈 (栈从高地址向低地址增长)
-                kfree_page((void*)round_up((u64)pp->kcontext - PAGE_SIZE, PAGE_SIZE));
+                kfree_page((void*)round_down((u64)pp->kcontext - 1, PAGE_SIZE));
+                kfree_page((void*)round_down((u64)pp->ucontext - 1, PAGE_SIZE));
 
                 // 释放进程结构体
                 kfree(pp);
@@ -221,10 +230,7 @@ NO_RETURN void exit(int code)
     PANIC();
 }
 
-int kill(int pid)
-{
-    // TODO:
-    // Set the killed flag of the proc to true and return 0.
-    // Return -1 if the pid is invalid (proc not found).
-    return 0;
-}
+// TODO: 终止进程
+// 设置进程的终止标志位, 并返回0
+// 如果pid无效 (找不到进程)  则返回-1
+int kill(int pid) { return 0; }

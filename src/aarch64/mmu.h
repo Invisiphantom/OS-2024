@@ -9,8 +9,7 @@ typedef unsigned long long u64;
 #define MT_NORMAL 0x1
 #define MT_NORMAL_NC 0x2
 #define MT_DEVICE_nGnRnE_FLAGS 0x00
-#define MT_NORMAL_FLAGS \
-    0xFF /* Inner/Outer Write-Back Non-Transient RW-Allocate */
+#define MT_NORMAL_FLAGS 0xFF    /* Inner/Outer Write-Back Non-Transient RW-Allocate */
 #define MT_NORMAL_NC_FLAGS 0x44 /* Inner/Outer Non-Cacheable */
 
 #define SH_OUTER (2 << 8)
@@ -33,9 +32,9 @@ typedef unsigned long long u64;
 #define PTE_RO (1 << 7)
 #define PTE_RW (0 << 7)
 
-#define PTE_KERNEL_DATA (PTE_KERNEL | PTE_NORMAL | PTE_BLOCK)
-#define PTE_KERNEL_DEVICE (PTE_KERNEL | PTE_DEVICE | PTE_BLOCK)
-#define PTE_USER_DATA (PTE_USER | PTE_NORMAL | PTE_PAGE)
+#define PTE_KERNEL_DATA (PTE_KERNEL | PTE_NORMAL | PTE_BLOCK) // 内核数据段 页表标志
+#define PTE_KERNEL_DEVICE (PTE_KERNEL | PTE_DEVICE | PTE_BLOCK) // 内核设备段 页表标志
+#define PTE_USER_DATA (PTE_USER | PTE_NORMAL | PTE_PAGE) // 用户数据段 页表标志
 
 #define N_PTE_PER_TABLE 512
 
@@ -55,9 +54,10 @@ typedef unsigned long long u64;
 // conver any address into physical address space.
 #define PSPACE(addr) ((u64)(addr) & (~KSPACE_MASK))
 
+// 页表项
 typedef u64 PTEntry;
 typedef PTEntry PTEntries[N_PTE_PER_TABLE];
-typedef PTEntry *PTEntriesPtr;
+typedef PTEntry* PTEntriesPtr;
 
 #define VA_OFFSET(va) ((u64)(va) & 0xFFF)
 #define PTE_ADDRESS(pte) ((pte) & ~0xFFFF000000000FFF)

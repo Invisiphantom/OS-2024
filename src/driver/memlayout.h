@@ -1,6 +1,6 @@
 #pragma once
 
-#define EXTMEM 0x40000000
+#define EXTMEM  0x40000000
 #define PHYSTOP 0x80000000
 
 #define KSPACE_MASK 0xFFFF000000000000
