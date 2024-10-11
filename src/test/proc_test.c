@@ -8,14 +8,6 @@ void set_parent_to_this(Proc* proc);
 
 static Semaphore s1, s2, s3, s4, s5, s6;
 
-// proc_test_1
-// 0: wait 10-19
-// 1: give living 20-29 to root_proc
-// 2: give dead 30-39 to root_proc
-// 34567: 40-89 odd P(s2) even V(s2)
-// 8: 90-99 V(s3) P(s4) get_all
-// 9: 100-109 P(s5) V(s6) post
-
 // #define DEBUG
 
 static void proc_test_1b(u64 a)
