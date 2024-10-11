@@ -37,18 +37,20 @@ void release_sched_lock() { release_spinlock(&sched_lock); }
 // 其他情况: panic
 bool activate_proc(Proc* p)
 {
-    if (p->state == RUNNING || p->state == RUNNABLE)
+    acquire_spinlock(&proc_lock);
+
+    if (p->state == RUNNING || p->state == RUNNABLE) {
+        release_spinlock(&proc_lock);
         return true;
+    }
 
     if (p->state == SLEEPING || p->state == UNUSED) {
         // 更新进程状态设置为 RUNNABLE
-        acquire_spinlock(&proc_lock);
         p->state = RUNNABLE;
-        release_spinlock(&proc_lock);
-
         // 将其添加到调度队列
         queue_push_lock(&sched_queue, &p->schinfo.sched_node);
 
+        release_spinlock(&proc_lock);
         return true;
     }
 
@@ -60,7 +62,6 @@ bool activate_proc(Proc* p)
 // 更新当前进程的状态为new_state
 static void update_this_state(enum procstate new_state)
 {
-    acquire_spinlock(&proc_lock);
 
     // 更新状态为new_state
     auto p = thisproc();
@@ -70,7 +71,6 @@ static void update_this_state(enum procstate new_state)
     if (new_state == SLEEPING || new_state == ZOMBIE)
         queue_detach_lock(&sched_queue, &p->schinfo.sched_node);
 
-    release_spinlock(&proc_lock);
 }
 
 // 从调度队列中挑选进程
@@ -114,17 +114,15 @@ static Proc* pick_next()
 // 将进程p更新为CPU选择的进程
 static void update_this_proc(Proc* p)
 {
-    acquire_spinlock(&proc_lock);
-
     auto c = thiscpu;
     c->sched.proc = p;
-
-    release_spinlock(&proc_lock);
 }
 
 // 接受调度 并将当前进程状态更新为new_state (需持有sched_lock)
 void sched(enum procstate new_state)
 {
+    acquire_spinlock(&proc_lock);
+
     // 获取当前执行的进程
     Proc* this = thisproc();
 
@@ -145,6 +143,8 @@ void sched(enum procstate new_state)
 
     // 切换到下一个进程
     next->state = RUNNING;
+
+    release_spinlock(&proc_lock);
 
     // 由进程负责释放锁 并在返回到调度器之前重新获取锁
     // 将旧上下文压栈 并用this->kcontext保存sp

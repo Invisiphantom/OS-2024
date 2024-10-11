@@ -7,6 +7,8 @@
 void set_parent_to_this(Proc* proc);
 
 static Semaphore s1, s2, s3, s4, s5, s6;
+static int s2_sub_in = 0, s2_add_in = 0;
+static int s2_sub_out = 0, s2_add_out = 0;
 
 // proc_test_1
 // 0: wait 10-19
@@ -31,7 +33,7 @@ static void proc_test_1b(u64 a)
 
         // 进行三次调度
         // 然后退出唤醒root_proc
-        case 1:
+        case 1: // pass
             yield();
             yield();
             yield();
@@ -46,18 +48,24 @@ static void proc_test_1b(u64 a)
         case 5:
         case 6:
         case 7:
-            if (a & 1)
+            if (a & 1) {
+                s2_add_in++;
                 post_sem(&s2);
-            else
+                s2_add_out++;
+            } // 奇数
+            else {
+                s2_sub_in++;
                 wait_sem(&s2);
+                s2_sub_out++;
+            } // 偶数
             break;
 
-        case 8:
+        case 8: // pass
             wait_sem(&s3);
             post_sem(&s4);
             break;
 
-        case 9:
+        case 9: // pass
             post_sem(&s5);
             wait_sem(&s6);
             break;
@@ -177,7 +185,7 @@ static void proc_test_1()
 
 void proc_test()
 {
-    printk("proc_test\n\n");
+    printk("proc_test\n");
     auto p = create_proc();
     int pid = start_proc(p, proc_test_1, 0); // 6
 

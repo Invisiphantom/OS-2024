@@ -14,6 +14,9 @@ typedef struct {
     SpinLock lock; // 信号量锁
 
     int val;            // 信号量值
+    int sz;             // 休眠链表大小
+    int sum_sub;        // 累计减少信号量值
+    int sum_add;        // 累计增加信号量值
     ListNode sleeplist; // 休眠链表
 } Semaphore;
 
