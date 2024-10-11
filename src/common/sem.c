@@ -16,7 +16,7 @@ void _lock_sem(Semaphore* sem) { acquire_spinlock(&sem->lock); }
 
 void _unlock_sem(Semaphore* sem) { release_spinlock(&sem->lock); }
 
-// 尝试获取信号量sem
+// 尝试获取信号量sem (需要持有锁)
 // 获取成功返回true, 失败返回false
 bool _get_sem(Semaphore* sem)
 {
@@ -54,7 +54,7 @@ int post_all_sem(Semaphore* sem)
     return ret;
 }
 
-// 等待信号量sem
+// 等待信号量sem (需要持有锁)
 // 如果是被唤醒的, 返回true
 // 如果是自己醒来的, 返回false
 bool _wait_sem(Semaphore* sem)
@@ -96,7 +96,8 @@ bool _wait_sem(Semaphore* sem)
     return ret;
 }
 
-// 释放信号量sem, 并唤醒一个最早等待的进程
+// 释放信号量sem (需要持有锁)
+// 并唤醒一个最早等待的进程
 void _post_sem(Semaphore* sem)
 {
     sem->val++;          // 增加信号量的值

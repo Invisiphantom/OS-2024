@@ -10,10 +10,10 @@ void trap_global_handler(UserContext *context)
 {
     thisproc()->ucontext = context;
 
-    u64 esr = arch_get_esr();
-    u64 ec = esr >> ESR_EC_SHIFT;
-    u64 iss = esr & ESR_ISS_MASK;
-    u64 ir = esr & ESR_IR_MASK;
+    u64 esr = arch_get_esr();     // Exception Syndrome Reg
+    u64 ec = esr >> ESR_EC_SHIFT; // Exception Class
+    u64 il = esr >> ESR_IR_SHIFT; // Instruction Length (0:16-bit 1:32-bit)
+    u64 iss = esr & ESR_ISS_MASK; // Instruction Specific Syndrome
 
     (void)iss;
 
@@ -21,7 +21,7 @@ void trap_global_handler(UserContext *context)
 
     switch (ec) {
     case ESR_EC_UNKNOWN: {
-        if (ir)
+        if (il)
             PANIC();
         else
             interrupt_global_handler();

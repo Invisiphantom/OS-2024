@@ -88,6 +88,7 @@ typedef struct Proc {
     struct Proc* parent; // 父进程
 
     struct schinfo schinfo; // 调度信息
+    struct pgdir pgdir;     // 进程页表
 
     void* kstack;            // 进程内核栈
     UserContext* ucontext;   // 用户上下文 (进程栈sp)
@@ -99,5 +100,5 @@ void init_proc(Proc*);
 Proc* create_proc();
 int start_proc(Proc*, void (*entry)(u64), u64 arg);
 NO_RETURN void exit(int code);
-int wait(int *exitcode);
+int wait(int* exitcode);
 int kill(int pid);
