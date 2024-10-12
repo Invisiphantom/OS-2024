@@ -19,28 +19,29 @@ struct FreePage {
 
 // Slab分配器 (静态数组)
 struct SlabAllocator {
-    SpinLock list_lock; // 分配器自旋锁
+    SpinLock list_lock;       // 分配器自旋锁
     struct SlabPage* partial; // 部分页链表
-    struct SlabPage* full; // 完全页链表
-    u16 obj_size; // 对象长度
+    struct SlabPage* full;    // 完全页链表
+    u16 obj_size;             // 对象长度
 };
 
 #define SA_TYPES 32 // Slab分配器种类数
 static struct SlabAllocator SA[SA_TYPES];
-static const u16 SA_SIZES[SA_TYPES] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072 };
+static const u16 SA_SIZES[SA_TYPES]
+    = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072 };
 
 // Slab页 (双向链表)
 struct SlabPage {
-    u8 sa_type; // 所属的分配器类型
-    u16 obj_cnt; // 已分配对象数量
+    u8 sa_type;               // 所属的分配器类型
+    u16 obj_cnt;              // 已分配对象数量
     u16 free_obj_head_offset; // 首对象偏移位置
-    struct SlabPage* prev; // 上一个Slab页
-    struct SlabPage* next; // 下一个Slab页
+    struct SlabPage* prev;    // 上一个Slab页
+    struct SlabPage* next;    // 下一个Slab页
 };
 
 // Slab对象 (单向链表)
 struct SlabObj {
-    u16 next_offset; // (2bytes)
+    u16 next_offset; // (2字节)
 };
 
 void kinit()
@@ -118,7 +119,8 @@ void* kalloc(unsigned long long size)
             // 初始化 对象链表
             u16 obj_offset = page->free_obj_head_offset;
             auto obj = (struct SlabObj*)((u64)page + obj_offset);
-            for (; obj_offset <= PAGE_SIZE - SA[i].obj_size; obj_offset += SA[i].obj_size) {
+            for (; obj_offset <= PAGE_SIZE - SA[i].obj_size;
+                 obj_offset += SA[i].obj_size) {
                 obj = (struct SlabObj*)((u64)page + obj_offset);
                 obj->next_offset = obj_offset + SA[i].obj_size;
             }

@@ -62,7 +62,7 @@ inline bool _empty_list(ListNode* list) { return (list->next == list); }
 
 // -------------------------------- Queue -------------------------------- //
 
-// 初始化队列 (需持有队列锁)
+// 初始化循环队列 (需持有队列锁)
 void queue_init(Queue* x)
 {
     x->begin = x->end = 0;
@@ -77,12 +77,13 @@ void queue_lock(Queue* x) { acquire_spinlock(&x->lk); }
 void queue_unlock(Queue* x) { release_spinlock(&x->lk); }
 
 // 将结点item添加到队列x的尾部 (需持有队列锁)
-void queue_push(Queue* x, ListNode* item)
+void _queue_push(Queue* x, ListNode* item)
 {
     init_list_node(item);
 
     if (x->sz == 0)
         x->begin = x->end = item;
+
     else {
         _merge_list(x->end, item);
         x->end = item;
@@ -92,16 +93,15 @@ void queue_push(Queue* x, ListNode* item)
 }
 
 // 从队列x的头部移除一个结点 (需持有队列锁)
-void queue_pop(Queue* x)
+void _queue_pop(Queue* x)
 {
     // 确保队列不为空
     if (x->sz == 0)
         PANIC();
 
-    // 如果只有单元素, 则清空
-    if (x->sz == 1) {
+    // 如果只有单元素, 则清空队列
+    if (x->sz == 1)
         x->begin = x->end = 0;
-    }
 
     // 否则将头部结点移除
     else {
@@ -115,22 +115,23 @@ void queue_pop(Queue* x)
 }
 
 // 从队列x中移除结点item (需持有队列锁)
-void queue_detach(Queue* x, ListNode* item)
+void _queue_detach(Queue* x, ListNode* item)
 {
     if (x->sz == 0)
         PANIC();
 
     if (x->sz == 1)
         x->begin = x->end = 0;
+
     else if (x->begin == item)
         x->begin = x->begin->next;
+
     else if (x->end == item)
         x->end = x->end->prev;
 
     _detach_from_list(item);
     x->sz--;
 }
-
 
 // 返回队列x的头部结点
 ListNode* queue_front(Queue* x)

@@ -3,7 +3,7 @@
 #include <common/defines.h>
 #include <common/spinlock.h>
 
-// 链表结点
+// 循环链表结点
 typedef struct ListNode {
     struct ListNode* prev;
     struct ListNode* next;
@@ -40,6 +40,7 @@ bool _empty_list(ListNode* list);
 
 // -------------------------------- Queue -------------------------------- //
 
+// 循环队列
 typedef struct Queue {
     ListNode* begin; // 队列头结点
     ListNode* end;   // 队列尾结点
@@ -50,28 +51,28 @@ typedef struct Queue {
 void queue_init(Queue* x);
 void queue_lock(Queue* x);
 void queue_unlock(Queue* x);
-void queue_push(Queue* x, ListNode* item);
-void queue_pop(Queue* x);
-void queue_detach(Queue* x, ListNode* item);
+void _queue_push(Queue* x, ListNode* item);
+void _queue_pop(Queue* x);
+void _queue_detach(Queue* x, ListNode* item);
 ListNode* queue_front(Queue* x);
 bool queue_empty(Queue* x);
 
 #define queue_push_lock(x, item)                                                         \
     ({                                                                                   \
         queue_lock(x);                                                                   \
-        queue_push(x, item);                                                             \
+        _queue_push(x, item);                                                             \
         queue_unlock(x);                                                                 \
     })
 #define queue_pop_lock(x)                                                                \
     ({                                                                                   \
         queue_lock(x);                                                                   \
-        queue_pop(x);                                                                    \
+        _queue_pop(x);                                                                    \
         queue_unlock(x);                                                                 \
     })
 #define queue_detach_lock(x, item)                                                       \
     ({                                                                                   \
         queue_lock(x);                                                                   \
-        queue_detach(x, item);                                                           \
+        _queue_detach(x, item);                                                           \
         queue_unlock(x);                                                                 \
     })
 

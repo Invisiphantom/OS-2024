@@ -95,8 +95,8 @@ static Proc* pick_next()
 
         if (p->state == RUNNABLE) {
             // 将该进程 移动到 队列尾
-            queue_detach(&sched_queue, node);
-            queue_push(&sched_queue, node);
+            _queue_detach(&sched_queue, node);
+            _queue_push(&sched_queue, node);
             queue_unlock(&sched_queue);
             return p;
         }
