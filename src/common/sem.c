@@ -77,7 +77,6 @@ bool _wait_sem(Semaphore* sem)
     acquire_sched_lock();         // 获取调度锁
     release_spinlock(&sem->lock); // 释放信号量锁
     sched(SLEEPING);              // 设置当前进程为休眠 并启用调度
-
     acquire_spinlock(&sem->lock); // 重新获取信号量锁
 
     // 如果不是被post_sem唤醒
@@ -88,7 +87,6 @@ bool _wait_sem(Semaphore* sem)
         _detach_from_list(&wait->slnode);
     }
 
-    release_spinlock(&sem->lock); // 释放信号量锁
 
     // 返回唤醒状态
     bool ret = wait->up;
@@ -107,6 +105,7 @@ void _post_sem(Semaphore* sem)
 
         // 获取休眠链表上最早的等待体
         auto wait = container_of(sem->sleeplist.prev, WaitData, slnode);
+        ASSERT(wait->proc->state == SLEEPING);
 
         wait->up = true;                  // 标记为已唤醒
         _detach_from_list(&wait->slnode); // 从休眠链表中移除

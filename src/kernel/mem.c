@@ -6,43 +6,44 @@
 #include <kernel/printk.h>
 #include <common/defines.h>
 #include <common/string.h>
+#include <common/list.h>
 
 RefCount kalloc_page_cnt;
 static SpinLock kalloc_page_lock;
 extern char end[];
 
 // 空闲页链表 (单向链表)
-static struct FreePage* free_page_head;
-struct FreePage {
+typedef struct FreePage {
     struct FreePage* next;
-};
+} FreePage;
+
+static FreePage* free_page_head;
 
 // Slab分配器 (静态数组)
-struct SlabAllocator {
-    SpinLock list_lock;       // 分配器自旋锁
-    struct SlabPage* partial; // 部分页链表
-    struct SlabPage* full;    // 完全页链表
-    u16 obj_size;             // 对象长度
-};
+typedef struct SlabAlloc {
+    SpinLock sa_lock; // 分配器锁
+    ListNode partial;   // 部分页链表
+    ListNode full;      // 完全页链表
+    u16 obj_size;       // 对象长度
+} SlabAlloc;
 
 #define SA_TYPES 32 // Slab分配器种类数
-static struct SlabAllocator SA[SA_TYPES];
+static SlabAlloc SA[SA_TYPES];
 static const u16 SA_SIZES[SA_TYPES]
     = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1016, 2032, 4072 };
 
 // Slab页 (双向链表)
-struct SlabPage {
+typedef struct SlabPage {
     u8 sa_type;               // 所属的分配器类型
     u16 obj_cnt;              // 已分配对象数量
-    u16 free_obj_head_offset; // 首对象偏移位置
-    struct SlabPage* prev;    // 上一个Slab页
-    struct SlabPage* next;    // 下一个Slab页
-};
+    u16 free_obj_offset; // 首对象偏移位置
+    ListNode node;            // 串在页链表中的结点
+} SlabPage;
 
 // Slab对象 (单向链表)
-struct SlabObj {
+typedef struct SlabObj {
     u16 next_offset; // (2字节)
-};
+} SlabObj;
 
 void kinit()
 {
@@ -63,13 +64,14 @@ void kinit()
 
     // 初始化所有Slab分配器
     for (int i = 0; i < SA_TYPES; i++) {
-        init_spinlock(&SA[i].list_lock);
+        init_spinlock(&SA[i].sa_lock);
         SA[i].obj_size = SA_SIZES[i];
-        SA[i].partial = NULL;
-        SA[i].full = NULL;
+        init_list_node(&SA[i].partial);
+        init_list_node(&SA[i].full);
     }
 }
 
+// 直接分配一页
 void* kalloc_page()
 {
     increment_rc(&kalloc_page_cnt);
@@ -82,8 +84,12 @@ void* kalloc_page()
     return page;
 }
 
+// 直接释放一页 (需要页对齐)
 void kfree_page(void* p)
 {
+    // 确保地址页对齐
+    ASSERT(((u64)p & (PAGE_SIZE - 1)) == 0);
+
     decrement_rc(&kalloc_page_cnt);
     acquire_spinlock(&kalloc_page_lock);
 
@@ -101,53 +107,47 @@ void* kalloc(unsigned long long size)
         if (size > SA[i].obj_size)
             continue; // 如果分配器过短，则跳过
 
-        acquire_spinlock(&SA[i].list_lock);
-        struct SlabPage* page = SA[i].partial;
+        acquire_spinlock(&SA[i].sa_lock);
+
+        // 从部分页链表中取出一页
+        SlabPage* page = container_of(SA[i].partial.next, SlabPage, node);
 
         // 如果没有可用页，则分配新页
-        if (page == NULL) {
-            page = (struct SlabPage*)kalloc_page();
+        if (_empty_list(&SA[i].partial)) {
+            page = (SlabPage*)kalloc_page();
             memset(page, 0, PAGE_SIZE);
-            page->sa_type = i; // 所属分配器类型
-            page->obj_cnt = 0; // 无已分配对象
-            page->prev = NULL; // 无前页
-            page->next = NULL; // 无后页
+            page->sa_type = i;           // 所属分配器类型
+            page->obj_cnt = 0;           // 无已分配对象
+            init_list_node(&page->node); // 初始化链表节点
 
             // 首对象 偏移位置 (地址对齐)
-            page->free_obj_head_offset = sizeof(struct SlabPage);
+            page->free_obj_offset = sizeof(SlabPage);
 
             // 初始化 对象链表
-            u16 obj_offset = page->free_obj_head_offset;
-            auto obj = (struct SlabObj*)((u64)page + obj_offset);
+            u16 obj_offset = page->free_obj_offset;
+            auto obj = (SlabObj*)((u64)page + obj_offset);
             for (; obj_offset <= PAGE_SIZE - SA[i].obj_size;
                  obj_offset += SA[i].obj_size) {
-                obj = (struct SlabObj*)((u64)page + obj_offset);
+                obj = (SlabObj*)((u64)page + obj_offset);
                 obj->next_offset = obj_offset + SA[i].obj_size;
             }
             obj->next_offset = NULL; // 末尾对象的next指针为NULL
 
             // 更新 部分链表首页
-            page->next = SA[i].partial;
-            SA[i].partial = page;
+            _insert_into_list(&SA[i].partial, &page->node);
         }
 
-        auto obj = (struct SlabObj*)((u64)page + page->free_obj_head_offset);
-        page->free_obj_head_offset = obj->next_offset;
+        auto obj = (SlabObj*)((u64)page + page->free_obj_offset);
+        page->free_obj_offset = obj->next_offset;
         page->obj_cnt++;
 
         // 如果页已满，则从部分链表移至完全链表
-        if (page->free_obj_head_offset == NULL) {
-            SA[i].partial = page->next;
-            if (SA[i].partial != NULL)
-                SA[i].partial->prev = NULL;
-
-            page->next = SA[i].full;
-            if (SA[i].full != NULL)
-                SA[i].full->prev = page;
-            SA[i].full = page;
+        if (page->free_obj_offset == NULL) {
+            _detach_from_list(&page->node);
+            _insert_into_list(&SA[i].full, &page->node);
         }
 
-        release_spinlock(&SA[i].list_lock);
+        release_spinlock(&SA[i].sa_lock);
         return obj;
     }
 
@@ -158,33 +158,21 @@ void* kalloc(unsigned long long size)
 
 void kfree(void* ptr)
 {
-    auto obj = (struct SlabObj*)ptr;
-    auto page = (struct SlabPage*)((u64)obj & ~(PAGE_SIZE - 1));
+    auto obj = (SlabObj*)ptr;
+    auto page = (SlabPage*)((u64)obj & PAGE_MASK);
 
-    acquire_spinlock(&SA[page->sa_type].list_lock);
+    acquire_spinlock(&SA[page->sa_type].sa_lock);
 
-    obj->next_offset = page->free_obj_head_offset;
-    page->free_obj_head_offset = (u16)((u64)obj - (u64)page);
+    obj->next_offset = page->free_obj_offset;
+    page->free_obj_offset = (u16)((u64)obj - (u64)page);
     page->obj_cnt--;
 
     // 如果此时页在完全链表, 则将其移至部分链表
     if (obj->next_offset == NULL) {
-        if (page->prev != NULL)
-            page->prev->next = page->next;
-        if (page->next != NULL)
-            page->next->prev = page->prev;
-
-        if (SA[page->sa_type].full == page)
-            SA[page->sa_type].full = page->next;
-
-        if (SA[page->sa_type].partial != NULL)
-            SA[page->sa_type].partial->prev = page;
-
-        page->prev = NULL;
-        page->next = SA[page->sa_type].partial;
-        SA[page->sa_type].partial = page;
+        _detach_from_list(&page->node);
+        _insert_into_list(&SA[page->sa_type].partial, &page->node);
     }
 
-    release_spinlock(&SA[page->sa_type].list_lock);
+    release_spinlock(&SA[page->sa_type].sa_lock);
     return;
 }

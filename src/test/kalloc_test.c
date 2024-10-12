@@ -11,18 +11,18 @@ extern RefCount kalloc_page_cnt;
 static void* p[4][10000];
 static short sz[4][10000];
 
-#define FAIL(...)                                                              \
-    {                                                                          \
-        printk(__VA_ARGS__);                                                   \
-        while (1)                                                              \
-            ;                                                                  \
+#define FAIL(...)                                                                        \
+    {                                                                                    \
+        printk(__VA_ARGS__);                                                             \
+        while (1)                                                                        \
+            ;                                                                            \
     }
 
-#define SYNC(i)                                                                \
-    arch_dsb_sy();                                                             \
-    increment_rc(&x);                                                          \
-    while (x.count < 4 * i)                                                    \
-        ;                                                                      \
+#define SYNC(i)                                                                          \
+    arch_dsb_sy();                                                                       \
+    increment_rc(&x);                                                                    \
+    while (x.count < 4 * i)                                                              \
+        ;                                                                                \
     arch_dsb_sy();
 
 // 启用单CPU调试
@@ -34,9 +34,13 @@ static volatile RefCount x;
 
 void kalloc_test()
 {
+
     int i = cpuid(); // CPU编号
     int r = kalloc_page_cnt.count;
     int y = 10000 - i * 500;
+
+    if (i == 0)
+        printk("kalloc_test\n");
 
 #ifndef SINGLE_CORE
     SYNC(1) // 确保4个CPU都到达
@@ -44,9 +48,7 @@ void kalloc_test()
 
     for (int j = 0; j < y; j++) {
         p[i][j] = kalloc_page();
-        if (!p[i][j]
-            || ((u64)p[i][j]
-                & 4095)) // 如果p[i][j]为NULL 或者 p[i][j]不是页对齐
+        if (!p[i][j] || ((u64)p[i][j] & 4095)) // 如果p[i][j]为NULL 或者 p[i][j]不是页对齐
             FAIL("FAIL: kalloc_page() = %p\n", p[i][j]); // 打印错误信息
         memset(p[i][j], i ^ j, PAGE_SIZE); // 将p[i][j]页的每个字节都设置为 i^j
     }
@@ -78,7 +80,7 @@ void kalloc_test()
 
             // r=[0,126]  49.6%
             if (r < 127) {
-                z = rand() % 48 + 17; // z=[17,64]
+                z = rand() % 48 + 17;      // z=[17,64]
                 z = round_up((u64)z, 4ll); // 向上对4的倍数取整
             }
 
@@ -89,23 +91,23 @@ void kalloc_test()
 
             // r=[181,234]  20.7%
             else if (r < 235) {
-                z = rand() % 192 + 65; // z=[65,256]
+                z = rand() % 192 + 65;     // z=[65,256]
                 z = round_up((u64)z, 8ll); // 向上对8的倍数取整
             }
 
             // r=[235,254]  7.42%
             else if (r < 255) {
-                z = rand() % 256 + 257; // z=[257,512]
+                z = rand() % 256 + 257;    // z=[257,512]
                 z = round_up((u64)z, 8ll); // 向上对8的倍数取整
             }
 
             // r=[255]  0.04%
             else {
-                z = rand() % 1528 + 513; // z=[513,2040]
+                z = rand() % 1528 + 513;   // z=[513,2040]
                 z = round_up((u64)z, 8ll); // 向上对8的倍数取整
             }
 
-            sz[i][j] = z; // 记录大小
+            sz[i][j] = z;        // 记录大小
             p[i][j] = kalloc(z); // 分配大小为z的内存
             u64 q = (u64)p[i][j];
 
@@ -114,7 +116,6 @@ void kalloc_test()
             // _______0 -> _______0 (2 byte)
             // ______00 -> ______00 (4 byte)
             // _0000000 -> _0000000 (8 byte)
-
 
             if (p[i][j] == NULL)
                 FAIL("NULL: kalloc(%d) = %p\n", z, p[i][j]);

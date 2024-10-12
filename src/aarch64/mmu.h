@@ -3,6 +3,7 @@
 #include <common/defines.h>
 typedef unsigned long long u64;
 #define PAGE_SIZE 4096
+#define PAGE_MASK ~(PAGE_SIZE - 1)
 
 /* Memory region attributes */
 #define MT_DEVICE_nGnRnE 0x0

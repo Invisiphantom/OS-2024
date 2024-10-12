@@ -7,29 +7,29 @@
 volatile bool panic_flag;
 
 // lab1
-NO_RETURN void idle_entry() {
-    kalloc_test();
-    arch_stop_cpu();
-}
-
-// main 函数跳转到这里
-// NO_RETURN void idle_entry()
-// {
-//     set_cpu_on();
-
-//     while (1) {
-//         acquire_sched_lock();
-//         sched(RUNNABLE);
-
-//         if (panic_flag)
-//             break;
-
-//         arch_with_trap { arch_wfi(); }
-//     }
-
-//     set_cpu_off();
+// NO_RETURN void idle_entry() {
+//     kalloc_test();
 //     arch_stop_cpu();
 // }
+
+// main 函数跳转到这里
+NO_RETURN void idle_entry()
+{
+    set_cpu_on();
+
+    while (1) {
+        acquire_sched_lock();
+        sched(RUNNABLE);
+
+        if (panic_flag)
+            break;
+
+        arch_with_trap { arch_wfi(); }
+    }
+
+    set_cpu_off();
+    arch_stop_cpu();
+}
 
 // root_proc 进程跳转到这里
 NO_RETURN void kernel_entry()
@@ -39,7 +39,7 @@ NO_RETURN void kernel_entry()
 
     
     // lab2
-    // proc_test();
+    proc_test();
 
     // vm_test();
     // user_proc_test();
