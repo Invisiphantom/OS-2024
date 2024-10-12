@@ -37,9 +37,13 @@ set(qemu_flags
     -global virtio-mmio.force-legacy=false
     -kernel "${kernel_elf}")
 
-add_custom_target(qemu
-    COMMAND ${aarch64_qemu} ${qemu_flags} -gdb tcp::1234
+add_custom_target(qemu ALL
+    COMMAND ${aarch64_qemu} ${qemu_flags}
     DEPENDS image)
+add_custom_target(qemu-build
+    COMMAND echo "Build QEMU without running it"
+    DEPENDS image
+)
 add_custom_target(qemu-debug
     COMMAND ${aarch64_qemu} ${qemu_flags} -gdb tcp::1234 -S
     DEPENDS image)
