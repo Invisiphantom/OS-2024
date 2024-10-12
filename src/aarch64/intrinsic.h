@@ -57,6 +57,7 @@ static ALWAYS_INLINE usize cpuid()
 /* Instruct compiler not to reorder instructions around the fence. */
 static ALWAYS_INLINE void compiler_fence() { asm volatile("" ::: "memory"); }
 
+// 获取CPU当前时钟频率 (次/秒)
 static ALWAYS_INLINE u64 get_clock_frequency()
 {
     u64 result;
@@ -258,6 +259,9 @@ static ALWAYS_INLINE void set_cntv_tval_el0(u64 t)
     asm volatile("msr cntv_tval_el0, %0" : : "r"(t));
 }
 
+// 启用trap
+// 如果trap之前是开启的, 则返回true
+// 如果trap之前是关闭的, 则返回false
 static inline bool _arch_enable_trap()
 {
     u64 t;
@@ -268,6 +272,9 @@ static inline bool _arch_enable_trap()
     return false;
 }
 
+// 禁用trap
+// 如果trap之前是开启的, 则返回true
+// 如果trap之前是关闭的, 则返回false
 static inline bool _arch_disable_trap()
 {
     u64 t;

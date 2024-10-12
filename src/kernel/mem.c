@@ -159,7 +159,7 @@ void* kalloc(unsigned long long size)
 void kfree(void* ptr)
 {
     auto obj = (SlabObj*)ptr;
-    auto page = (SlabPage*)((u64)obj & PAGE_MASK);
+    auto page = (SlabPage*)PAGE_BASE((u64)obj);
 
     acquire_spinlock(&SA[page->sa_type].sa_lock);
 

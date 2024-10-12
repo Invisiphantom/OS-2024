@@ -21,12 +21,12 @@ extern struct cpu cpus[NCPU];
 
 // 定时器
 struct timer {
-    bool triggered; // 当前是否被触发
-    int elapse;     // 下次触发时间
-    u64 _key;
-    struct rb_node_ _node;
+    bool triggered;                 // 是否已经被触发
+    int elapse;                     // 下次触发时间
+    u64 _key;                       // 红黑树比较中的key
+    struct rb_node_ _node;          // 红黑树结点
     void (*handler)(struct timer*); // 处理函数
-    u64 data;
+    u64 data;                       // 定时触发次数
 };
 
 void init_clock_handler();

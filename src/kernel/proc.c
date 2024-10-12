@@ -124,7 +124,6 @@ int start_proc(Proc* p, void (*entry)(u64), u64 arg)
 // 保存退出状态到exitcode 并返回其pid
 int wait(int* exitcode)
 {
-
     acquire_spinlock(&proc_lock);
 
     // 如果没有子进程，则返回-1
@@ -230,7 +229,15 @@ NO_RETURN void exit(int code)
     PANIC();
 }
 
-// TODO: 终止进程
+// TODO: 遍历进程树, 终止进程
 // 设置进程的终止标志位, 并返回0
 // 如果pid无效 (找不到进程)  则返回-1
-int kill(int pid) { return 0; }
+int kill(int pid)
+{
+    // 确保不是root_proc和idle进程
+    ASSERT(pid > 1 + NCPU);
+
+
+
+    return -1;
+}

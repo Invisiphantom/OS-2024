@@ -28,6 +28,7 @@ void set_interrupt_handler(InterruptType type, InterruptHandler handler)
     int_handler[type] = handler;
 }
 
+// trap.c->trap_global_handler 跳转到这里
 void interrupt_global_handler()
 {
     u32 iar = gic_iar();

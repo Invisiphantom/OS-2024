@@ -6,6 +6,7 @@
 #include <kernel/proc.h>
 #include <kernel/syscall.h>
 
+// trap.S->trap_entry 跳转到这里
 void trap_global_handler(UserContext* context)
 {
     thisproc()->ucontext = context;

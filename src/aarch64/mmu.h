@@ -1,9 +1,9 @@
 #pragma once
 
 #include <common/defines.h>
+
 typedef unsigned long long u64;
 #define PAGE_SIZE 4096
-#define PAGE_MASK ~(PAGE_SIZE - 1)
 
 /* Memory region attributes */
 #define MT_DEVICE_nGnRnE 0x0
@@ -65,6 +65,14 @@ typedef PTEntry* PTEntriesPtr;
 #define PTE_FLAGS(pte) ((pte) & 0xFFFF000000000FFF)
 #define P2N(addr) (addr >> 12)
 #define PAGE_BASE(addr) ((u64)addr & ~(PAGE_SIZE - 1))
+
+/*
+ * +-----9-----+-----9-----+-----9-----+-----9-----+---------12---------+
+ * |  Level 0  |  Level 1  |  Level 2  |  Level 3  | Offset within Page |
+ * |   Index   |   Index   |   Index   |   Index   |                    |
+ * +-----------+-----------+-----------+-----------+--------------------+
+ *  \ VA_PART0/ \ VA_PART1/ \ VA_PART2/ \ VA_PART3/ \    VA_OFFSET    /
+ */
 
 #define VA_PART0(va) (((u64)(va) & 0xFF8000000000) >> 39)
 #define VA_PART1(va) (((u64)(va) & 0x7FC0000000) >> 30)

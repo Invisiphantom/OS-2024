@@ -29,7 +29,7 @@ void main()
         gicv3_init();        // 初始化GICv3
         gicv3_init_percpu(); // 当前CPU 设置GICv3
 
-        init_clock_handler();
+        init_clock_handler(); // 初始化定时器中断处理函数
 
         kinit(); // 初始化内核内存分配器
 

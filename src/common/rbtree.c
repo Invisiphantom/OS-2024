@@ -1,28 +1,39 @@
+
 #include "rbtree.h"
+
 #define RB_RED 0
 #define RB_BLACK 1
-#define rb_parent(r) ((rb_node)((r)->__rb_parent_color & ~3))
-#define __rb_parent(pc) ((rb_node)(pc & ~3))
 
-#define __rb_color(pc) ((pc) & 1)
-#define __rb_is_black(pc) __rb_color(pc)
-#define __rb_is_red(pc) (!__rb_color(pc))
-#define rb_color(rb) __rb_color((rb)->__rb_parent_color)
-#define rb_is_red(rb) __rb_is_red((rb)->__rb_parent_color)
-#define rb_is_black(rb) __rb_is_black((rb)->__rb_parent_color)
+#define __rb_parent(pc) ((rb_node)(pc & ~0b11)) // 提取parent_color中的父结点
+#define __rb_color(pc) ((pc) & 1)               // 提取parent_color中的颜色
+#define __rb_is_black(pc) __rb_color(pc)        // 判断parent_color是否为黑色
+#define __rb_is_red(pc) (!__rb_color(pc))       // 判断parent_color是否为红色
+
+#define rb_parent(rb) ((rb_node)((rb)->__rb_parent_color & ~0b11)) // 提取rb中的父结点
+#define rb_color(rb) __rb_color((rb)->__rb_parent_color)           // 提取rb中的颜色
+#define rb_is_red(rb) __rb_is_red((rb)->__rb_parent_color)     // 判断rb是否为红色
+#define rb_is_black(rb) __rb_is_black((rb)->__rb_parent_color) // 判断rb是否为黑色
+
+// 设置rb为红色
 static inline void rb_set_black(rb_node rb) { rb->__rb_parent_color |= RB_BLACK; }
+
 static inline rb_node rb_red_parent(rb_node red)
 {
     return (rb_node)red->__rb_parent_color;
 }
+
+// 设置rb的父结点为p
 static inline void rb_set_parent(rb_node rb, rb_node p)
 {
     rb->__rb_parent_color = rb_color(rb) | (unsigned long)p;
 }
+
+// 设置rb的父结点为p, 颜色为color
 static inline void rb_set_parent_color(rb_node rb, rb_node p, int color)
 {
     rb->__rb_parent_color = (unsigned long)p | color;
 }
+
 static inline void __rb_change_child(
     rb_node old, rb_node new, rb_node parent, rb_root root)
 {
@@ -34,6 +45,7 @@ static inline void __rb_change_child(
     } else
         root->rb_node = new;
 }
+
 static inline void __rb_rotate_set_parents(
     rb_node old, rb_node new, rb_root root, int color)
 {
@@ -42,6 +54,7 @@ static inline void __rb_rotate_set_parents(
     rb_set_parent_color(old, new, color);
     __rb_change_child(old, new, parent, root);
 }
+
 static void __rb_insert_fix(rb_node node, rb_root root)
 {
     rb_node parent = rb_red_parent(node), gparent, tmp;
@@ -113,6 +126,7 @@ static void __rb_insert_fix(rb_node node, rb_root root)
         }
     }
 }
+
 static rb_node __rb_erase(rb_node node, rb_root root)
 {
     rb_node child = node->rb_right, tmp = node->rb_left;
@@ -165,6 +179,8 @@ static rb_node __rb_erase(rb_node node, rb_root root)
     }
     return rebalance;
 }
+
+// 删除结点后 平衡红黑树
 static void __rb_erase_fix(rb_node parent, rb_root root)
 {
     rb_node node = NULL, sibling, tmp1, tmp2;
@@ -252,6 +268,8 @@ static void __rb_erase_fix(rb_node parent, rb_root root)
         }
     }
 }
+
+// 向红黑树中插入结点
 int _rb_insert(rb_node node, rb_root rt, bool (*cmp)(rb_node lnode, rb_node rnode))
 {
     rb_node nw = rt->rb_node, parent = NULL;
@@ -277,13 +295,18 @@ int _rb_insert(rb_node node, rb_root rt, bool (*cmp)(rb_node lnode, rb_node rnod
     __rb_insert_fix(node, rt);
     return 0;
 }
+
+// 从红黑树中删除结点
 void _rb_erase(rb_node node, rb_root root)
 {
-    rb_node rebalance;
-    rebalance = __rb_erase(node, root);
+    rb_node rebalance = __rb_erase(node, root);
+
+    // 如果发生失衡, 则修复
     if (rebalance)
         __rb_erase_fix(rebalance, root);
 }
+
+// 查找红黑树中的结点
 rb_node _rb_lookup(rb_node node, rb_root rt, bool (*cmp)(rb_node lnode, rb_node rnode))
 {
     rb_node nw = rt->rb_node;
@@ -297,13 +320,22 @@ rb_node _rb_lookup(rb_node node, rb_root rt, bool (*cmp)(rb_node lnode, rb_node 
     }
     return NULL;
 }
+
+// 获取红黑树的最左侧结点 (最小值)
 rb_node _rb_first(rb_root root)
 {
-    rb_node n;
-    n = root->rb_node;
-    if (!n)
+    ASSERT(root);
+
+    // 如果树为空, 则返回NULL
+    if (!root->rb_node)
         return NULL;
+
+    // 获取根结点
+    rb_node n = root->rb_node;
+
+    // 循环获取最左侧结点
     while (n->rb_left)
         n = n->rb_left;
+
     return n;
 }
