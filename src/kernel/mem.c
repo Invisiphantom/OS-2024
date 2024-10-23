@@ -81,6 +81,8 @@ void* kalloc_page()
     free_page_head = free_page_head->next;
 
     release_spinlock(&kalloc_page_lock);
+
+    ASSERT(page != NULL);
     return page;
 }
 

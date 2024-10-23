@@ -103,10 +103,10 @@ static Proc* pick_next()
 
         // 如果遍历完所有进程, 则break
         // 否则继续遍历下一个进程
-        if (node_next == queue_front(&sched_queue))
-            break;
-        else
+        if (node_next != queue_front(&sched_queue))
             node = node_next;
+        else
+            break;
     }
 
     queue_unlock(&sched_queue); // 释放调度队列锁

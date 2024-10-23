@@ -26,6 +26,8 @@
         "sched.h": "c",
         "syscall.h": "c",
         "interrupt.h": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "gpio.h": "c",
+        "base.h": "c"
     }
 }

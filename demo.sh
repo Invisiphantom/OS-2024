@@ -1,2 +1,2 @@
 cd build
-make qemu -s
+make -j8 qemu -s

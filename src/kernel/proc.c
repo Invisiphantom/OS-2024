@@ -56,7 +56,7 @@ void init_proc(Proc* p)
     // 初始化调度信息 (暂无)
     init_schinfo(&p->schinfo);
 
-    // 初始化进程页表
+    // 初始化进程页表为空
     init_pgdir(&p->pgdir);
 
     // 栈从高地址向低地址增长
