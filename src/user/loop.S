@@ -9,6 +9,13 @@ loop_start:
     mov x4, x0
     mov x8, #SYS_myreport
 
+
+// while (1) {
+//     for (x1=0; x1<10000; x1++) {}
+//     SYS_myreport(x0)
+// }
+
+
 delay:
     mov x0, #10000
     mov x1, #0

@@ -70,7 +70,7 @@ static Semaphore myrepot_done;
 
 // 自定义的系统调用
 // syscall.c->syscall_entry 跳转到这里
-u64 syscall_myreport(u64 id)
+u64 myreport(u64 id)
 {
     static bool stop;
 
@@ -82,7 +82,7 @@ u64 syscall_myreport(u64 id)
     proc_cnt[id]++;
     cpu_cnt[cpuid()]++;
 
-    // 停止测试 并唤醒信号量myrepot_done
+    // 如果条件满足, 停止测试 并唤醒myrepot_done
     if (proc_cnt[id] > 12345) {
         stop = true;
         post_sem(&myrepot_done);
@@ -123,12 +123,12 @@ void user_proc_test()
         p->ucontext->elr_el1 = EXTMEM; // loop.S
         p->ucontext->spsr_el1 = 0;     // EL0t
 
-        // 设置跳转到 trap.S->trap_return
-        pids[i] = start_proc(p, trap_return, 0);
+        // 设置跳转到 trap.S->trap_return(p->ucontext)
+        pids[i] = start_proc(p, trap_return, (u64)p->ucontext);
         printk("pid[%d] = %d\n", i, pids[i]);
     }
 
-    // 等待syscall_myreport计数器超过12345
+    // 等待某个进程唤醒myrepot_done
     ASSERT(wait_sem(&myrepot_done));
     printk("done\n");
 

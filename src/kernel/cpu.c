@@ -57,8 +57,8 @@ static void __timer_set_clock()
 // clock.c->invoke_clock_handler 跳转到这里
 static void timer_clock_handler()
 {
-    // 重置定时器为1秒
-    reset_clock(1000);
+    // 重置定时器为0.01秒
+    reset_clock(10);
 
     for (;;) {
         // 获取红黑树中的最左侧结点

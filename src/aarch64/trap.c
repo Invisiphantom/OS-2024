@@ -9,7 +9,8 @@
 // trap.S->trap_entry 跳转到这里
 void trap_global_handler(UserContext* context)
 {
-    thisproc()->ucontext = context;
+    auto p = thisproc();
+    p->ucontext = context;
 
     u64 esr = arch_get_esr();     // Exception Syndrome Reg
     u64 ec = esr >> ESR_EC_SHIFT; // Exception Class
@@ -46,8 +47,11 @@ void trap_global_handler(UserContext* context)
             PANIC();
         }
     }
-    // TODO: 如果进程有终止标志，返回用户空间时执行exit(-1)
-    // spsr diaf 判断是否是用户进程
+
+    // TODO: 如果进程有终止标志，且即将返回到用户态 则执行exit(-1)
+    auto spsr_mode = context->spsr_el1 & 0xF;
+    if (p->killed && spsr_mode == 0)
+        exit(-1);
 }
 
 NO_RETURN void trap_error_handler(u64 type)

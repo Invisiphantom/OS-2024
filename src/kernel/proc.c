@@ -7,13 +7,24 @@
 #include <kernel/printk.h>
 #include <kernel/cpu.h>
 
+#include <driver/memlayout.h>
+#include <kernel/pt.h>
+
 Proc root_proc;      // 初始init进程
 void kernel_entry(); // root_proc 进程跳转到这里
 
 // 全局进程大锁
 SpinLock proc_lock;
 
+// 顺序分配pid
 int nextpid = 1;
+
+// pid 进程红黑树
+struct rb_root_ pid_root = { NULL };
+static bool __pid_cmp(rb_node lnode, rb_node rnode)
+{
+    return container_of(lnode, Proc, _node)->pid < container_of(rnode, Proc, _node)->pid;
+}
 
 // 初始化第一个内核进程
 void init_kproc()
@@ -43,8 +54,10 @@ void init_proc(Proc* p)
     p->killed = false;
     p->idle = false;
 
+    // 将进程插入pid红黑树
     p->pid = nextpid;
     nextpid = nextpid + 1;
+    ASSERT(0 == _rb_insert(&p->_node, &pid_root, __pid_cmp));
 
     p->exitcode = 0;
     p->state = UNUSED;
@@ -62,7 +75,9 @@ void init_proc(Proc* p)
     // 栈从高地址向低地址增长
     p->kcontext = kalloc_page() + PAGE_SIZE - sizeof(KernelContext);
     p->ucontext = kalloc_page() + PAGE_SIZE - sizeof(UserContext);
-    p->ucontext->sp_el0 = (u64)p->ucontext;
+
+    // 因为trap_ret会将ucontext加载完, 所以直接将sp_el0设置为用户栈底
+    p->ucontext->sp_el0 = round_up((u64)p->ucontext, PAGE_SIZE);
 
     release_spinlock(&proc_lock);
 }
@@ -144,7 +159,9 @@ int wait(int* exitcode)
 
             // 如果子进程已经退出, 则释放子进程资源
             if (pp->state == ZOMBIE) {
+                // 从pid红黑树中移除
                 int pid = pp->pid;
+                _rb_erase(&pp->_node, &pid_root);
 
                 // 保存退出状态
                 if (exitcode != 0)
@@ -234,10 +251,28 @@ NO_RETURN void exit(int code)
 // 如果pid无效 (找不到进程)  则返回-1
 int kill(int pid)
 {
+    acquire_spinlock(&proc_lock);
+
     // 确保不是root_proc和idle进程
     ASSERT(pid > 1 + NCPU);
 
+    // 从pid红黑树中查找进程
+    Proc pid_p = { .pid = pid };
+    auto node_p = _rb_lookup(&pid_p._node, &pid_root, __pid_cmp);
+    if (node_p == NULL)
+        return -1;
 
+    auto p = container_of(node_p, Proc, _node);
+    if (p->state == UNUSED)
+        return -1;
 
-    return -1;
+    // 设置进程的终止标志位
+    p->killed = true;
+
+    release_spinlock(&proc_lock);
+
+    // 唤醒如果在睡眠的进程
+    activate_proc(p);
+
+    return 0;
 }

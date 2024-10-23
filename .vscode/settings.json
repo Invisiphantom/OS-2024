@@ -28,6 +28,8 @@
         "interrupt.h": "c",
         "timer.h": "c",
         "gpio.h": "c",
-        "base.h": "c"
+        "base.h": "c",
+        "pt.h": "c",
+        "syscallno.h": "c"
     }
 }
