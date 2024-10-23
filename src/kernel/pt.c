@@ -55,6 +55,9 @@ void init_pgdir(struct pgdir* pgdir)
 // TODO: 递归地释放页表页, 但不释放其引用的物理内存
 void free_pgdir(struct pgdir* pgdir)
 {
+    if(pgdir->pt == NULL)
+        return;
+
     // 遍历页表的所有页表项
     if (pgdir->level <= 2) {
         for (int i = 0; i < N_PTE_PER_TABLE; i++) {

@@ -10,6 +10,8 @@
 #include <driver/memlayout.h>
 #include <kernel/pt.h>
 
+// #define DEBUG
+
 Proc root_proc;      // 初始init进程
 void kernel_entry(); // root_proc 进程跳转到这里
 
@@ -87,11 +89,13 @@ Proc* create_proc()
     Proc* p = kalloc(sizeof(Proc));
     init_proc(p);
 
+#ifdef DEBUG
     // 打印每个新进程的信息 (FOR DEBUG)
     // addr:进程结构体地址  schnode:调度结点地址  ptnode:串在父进程链表上的结点地址
-    // auto p_mask = (u64)p % 0x10000;
-    // printk("pid=%d - addr=0x%p - schnode=0x%p - ptnode=0x%p\n", p->pid, (void*)p_mask,
-    //     (void*)(p_mask + 0x50), (void*)(p_mask + 0x38));
+    auto p_mask = (u64)p % 0x10000;
+    printk("pid=%d - addr=0x%p - schnode=0x%p - ptnode=0x%p\n", p->pid, (void*)p_mask,
+        (void*)(p_mask + 0x50), (void*)(p_mask + 0x38));
+#endif
 
     return p;
 }

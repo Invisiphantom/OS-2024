@@ -15,7 +15,7 @@ static struct {
 void init_clock()
 {
     enable_timer();    // 启用定时器
-    reset_clock(1000); // 设置等待1秒
+    reset_clock(10); // 设置等待0.01秒
 }
 
 // 重置定时器 等待时间 (毫秒)

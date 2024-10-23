@@ -47,10 +47,9 @@ def run_qemu_command(queue, iteration, wait_time, expected_out):
 
 
 def main():
-    error = False
-    wait_time = 2
-    batch_size = 5
-    batch_num = 100
+    wait_time = 2  # 每批次的等待时间
+    batch_size = 5  # 每批次的测试数
+    batch_num = 100  # 总批次数
     expected_out = "proc_test PASS"
     os.chdir("/root/data/OS-2024/build")
 
@@ -61,6 +60,7 @@ def main():
     processes = []
     queue = Queue()
 
+    error = False
     print(f"wait_time={wait_time}s, batch_size={batch_size}, batch_num={batch_num}")
     for batch in range(batch_num):
         print(f"Start Batch {batch + 1}:")
@@ -71,15 +71,15 @@ def main():
 
         for p in processes:
             p.join()
-        
+
         processes.clear()
-        
+
         lines = queue.get().split("#")
         for line in lines[1:]:
             if line.split(":")[1].strip() != "pass":
                 error = True
                 print(line)
-    
+
     if not error:
         print("All tests passed!")
 

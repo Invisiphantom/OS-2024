@@ -26,7 +26,7 @@ void init_sched()
 
     // 初始化调度定时器
     for (int i = 0; i < NCPU; i++) {
-        sched_timer[i].elapse = 50; // 间隔为0.05秒
+        sched_timer[i].elapse = 100; // 间隔时间
         sched_timer[i].handler = time_sched;
     }
 }
@@ -137,12 +137,6 @@ void sched(enum procstate new_state)
 {
     acquire_spinlock(&proc_lock);
 
-    // 如果是从exit()调用, 则关闭定时器
-    if (new_state == ZOMBIE) {
-        sched_timer[cpuid()].triggered = false;
-        cancel_cpu_timer(&sched_timer[cpuid()]);
-    }
-
     // 获取当前执行的进程
     Proc* this = thisproc();
 
@@ -172,15 +166,11 @@ void sched(enum procstate new_state)
 
     release_spinlock(&proc_lock);
 
-    // 如果不是root_proc和idle进程
-    // 则设置定时器 sched_timer
-    if (next->pid > 1 + NCPU)
-        set_cpu_timer(&sched_timer[cpuid()]);
-
     // 由进程负责释放锁 并在返回到调度器之前重新获取锁
     // 将旧上下文压栈 并用this->kcontext保存sp
     // 然后从next->kcontext的sp加载新上下文
-    printk("sched: %d -> %d\n", this->pid, next->pid);
+    // printk("sched: %d -> %d\n", this->pid, next->pid);
+    set_cpu_timer(&sched_timer[cpuid()]);
     if (next != this) {
         attach_pgdir(&next->pgdir); // 切换到进程页表
         swtch(&this->kcontext, next->kcontext);
