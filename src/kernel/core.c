@@ -39,11 +39,11 @@ NO_RETURN void kernel_entry()
 
     
     // lab2
-    proc_test();
+    // proc_test();
 
     // vm_test();
 
-    // user_proc_test();
+    user_proc_test();
 
 
 

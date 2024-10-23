@@ -26,7 +26,7 @@ void init_sched()
 
     // 初始化调度定时器
     for (int i = 0; i < NCPU; i++) {
-        sched_timer[i].elapse = 100; // 间隔时间
+        sched_timer[i].elapse = 20; // 间隔时间
         sched_timer[i].handler = time_sched;
     }
 }
