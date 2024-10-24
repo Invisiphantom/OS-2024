@@ -151,7 +151,6 @@ int wait(int* exitcode)
     }
 
     for (;;) {
-
         // 开始遍历所有子进程
         for (auto pp_node = p->children.next;;) {
             // 暂存下个结点, 防止detach后找不到

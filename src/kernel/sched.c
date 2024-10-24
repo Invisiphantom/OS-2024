@@ -182,7 +182,7 @@ void sched(enum procstate new_state)
             attach_pgdir(&next->pgdir);
 
             // 重置调度定时器
-            set_cpu_timer(&sched_timer[cpuid()]);
+            // set_cpu_timer(&sched_timer[cpuid()]);
 
             // 切换进程上下文
             swtch(&this->kcontext, next->kcontext);

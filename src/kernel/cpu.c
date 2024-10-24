@@ -103,8 +103,8 @@ void set_cpu_timer(struct timer* timer)
 {
     // 如果已经添加, 则重置定时器
     if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp)) {
-        _rb_erase(&timer->_node, &cpus[cpuid()].timer);
-        set_cpu_timer(timer);
+        // _rb_erase(&timer->_node, &cpus[cpuid()].timer);
+        // set_cpu_timer(timer);
         return;
     }
 
