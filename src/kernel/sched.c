@@ -24,7 +24,7 @@ void init_sched()
 
     // 初始化调度定时器
     for (int i = 0; i < NCPU; i++) {
-        sched_timer[i].elapse = 40; // 间隔时间
+        sched_timer[i].elapse = 20; // 间隔时间
         sched_timer[i].handler = time_sched;
     }
 }
@@ -34,8 +34,6 @@ void init_schinfo(struct schinfo* info) { init_list_node(&info->sched_node); }
 
 // 返回当前CPU上执行的进程
 Proc* thisproc() { return thiscpu->sched.proc; }
-
-
 
 // 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
@@ -70,7 +68,7 @@ bool activate_proc(Proc* p)
     PANIC();
 }
 
-// 更新当前进程的状态为new_state (需持有this->lock)
+// 更新当前进程的状态为new_state (需持有进程锁)
 static void update_this_state(enum procstate new_state)
 {
     // 更新状态为new_state
@@ -99,8 +97,8 @@ static Proc* pick_next()
         auto node_next = node->next;
         auto p = container_of(node, Proc, schinfo.sched_node);
 
-        if (p != this && p->state != RUNNING) {
-            acquire_spinlock(&p->lock); // **
+        // 尝试去抢锁, 抢不到也没关系 (避免与队列锁发生死锁)
+        if (p != this && p->state == RUNNABLE && try_acquire_spinlock(&p->lock)) { // **
             if (p->state == RUNNABLE) {
                 // 将该进程 移动到 队列尾
                 _queue_detach(&sched_queue, node);
