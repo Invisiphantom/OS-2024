@@ -100,7 +100,7 @@ static void hello(struct timer* t)
 // 把timer挂载到CPU的定时红黑树上
 void set_cpu_timer(struct timer* timer)
 {
-    _arch_disable_trap(); // * 关闭中断
+    _arch_disable_trap(); //* 关闭中断
 
     // 如果已存在, 则移除原来的定时器
     if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp))
@@ -118,13 +118,13 @@ void set_cpu_timer(struct timer* timer)
     // 通过定时红黑树 更新定时器值
     __timer_set_clock();
 
-    _arch_enable_trap(); // * 开启中断
+    _arch_enable_trap(); //* 开启中断
 }
 
 // 从定时红黑树中删除结点timer
 void cancel_cpu_timer(struct timer* timer)
 {
-    _arch_disable_trap(); // * 关闭中断
+    _arch_disable_trap(); //* 关闭中断
 
     // 如果存在, 则从定时红黑树中删除结点timer
     if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp))
@@ -133,7 +133,7 @@ void cancel_cpu_timer(struct timer* timer)
     // 通过定时红黑树 更新定时器值
     __timer_set_clock();
 
-    _arch_enable_trap(); // * 开启中断
+    _arch_enable_trap(); //* 开启中断
 }
 
 void set_cpu_on()

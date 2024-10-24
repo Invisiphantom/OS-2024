@@ -15,7 +15,7 @@ ListNode* _insert_into_list(ListNode* list, ListNode* node);
 ListNode* _detach_from_list(ListNode* node);
 bool _empty_list(ListNode* list);
 
-// * List operations with locks
+//* List operations with locks
 #define merge_list(lock, node1, node2)                                                   \
     ({                                                                                   \
         acquire_spinlock(lock);                                                          \
