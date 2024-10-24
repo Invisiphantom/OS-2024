@@ -18,8 +18,9 @@ NO_RETURN void idle_entry()
     set_cpu_on();
 
     while (1) {
+        acquire_sched();
         sched(RUNNABLE);
-        release_sched_lock();
+        release_sched();
 
         if (panic_flag)
             break;
@@ -48,8 +49,9 @@ NO_RETURN void kernel_entry()
 
 
     while (1) {
+        acquire_sched();
         sched(RUNNABLE);
-        release_sched_lock();
+        release_sched();
     }
 }
 

@@ -13,7 +13,7 @@
 Proc root_proc;      // 初始init进程
 void kernel_entry(); // root_proc 进程跳转到这里
 
-// 顺序分配pid
+// 顺序分配pid (需要持有锁)
 static int nextpid = 1;
 
 // pid树
@@ -54,9 +54,11 @@ void init_proc(Proc* p)
     p->idle = false;
 
     // 将进程插入pid树
+    acquire_spinlock(&pid_root.lock); // *
     p->pid = nextpid;
     nextpid = nextpid + 1;
-    ASSERT(0 == rb_insert_lock(&p->_node, &pid_root, __pid_cmp));
+    ASSERT(0 == _rb_insert(&p->_node, &pid_root, __pid_cmp));
+    release_spinlock(&pid_root.lock); // *
 
     p->exitcode = 0;
     p->state = UNUSED;
@@ -162,7 +164,8 @@ int wait(int* exitcode)
             if (pp->state == ZOMBIE) {
                 // 从pid树中移除
                 int pid = pp->pid;
-                _rb_erase(&pp->_node, &pid_root);
+
+                rb_erase_lock(&pp->_node, &pid_root);
 
                 // 保存退出状态
                 if (exitcode != 0)
@@ -253,8 +256,9 @@ NO_RETURN void exit(int code)
     release_spinlock(&p->lock);      // *
 
     // 调度进程 状态切换为ZOMBIE
-    acquire_sched_lock();
+    acquire_sched();
     sched(ZOMBIE);
+    release_sched();
 
     printk("exit: should not reach here");
     PANIC();

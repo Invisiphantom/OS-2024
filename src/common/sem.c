@@ -75,8 +75,9 @@ bool _wait_sem(Semaphore* sem)
     _insert_into_list(&sem->sleeplist, &wait->slnode);
 
     release_spinlock(&sem->lock); // 释放信号量锁
+    acquire_sched();              // 准备调度
     sched(SLEEPING);              // 设置当前进程为休眠 并启用调度
-    release_sched_lock();         // 释放调度锁
+    release_sched();              // 结束调度
     acquire_spinlock(&sem->lock); // 重新获取信号量锁
 
     // 如果不是被post_sem唤醒
@@ -86,7 +87,6 @@ bool _wait_sem(Semaphore* sem)
         ASSERT(sem->val <= 0);
         _detach_from_list(&wait->slnode);
     }
-
 
     // 返回唤醒状态
     bool ret = wait->up;

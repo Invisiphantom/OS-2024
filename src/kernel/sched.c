@@ -11,6 +11,7 @@ extern bool panic_flag;
 static Queue sched_queue; // 调度队列
 
 // 调度定时器
+static bool isSched[NCPU];
 static struct timer sched_timer[NCPU];
 static void time_sched(struct timer* t) { sched(RUNNABLE); }
 
@@ -34,8 +35,7 @@ void init_schinfo(struct schinfo* info) { init_list_node(&info->sched_node); }
 // 返回当前CPU上执行的进程
 Proc* thisproc() { return thiscpu->sched.proc; }
 
-void acquire_sched_lock() { }
-void release_sched_lock() { }
+
 
 // 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
@@ -82,8 +82,7 @@ static void update_this_state(enum procstate new_state)
         queue_detach_lock(&sched_queue, &p->schinfo.sched_node);
 }
 
-// 从调度队列中挑选进程
-// (需持有this->lock, 返回时会获取next->lock)
+// 从调度队列中挑选进程 (获取锁)
 static Proc* pick_next()
 {
     auto this = thisproc();
@@ -125,6 +124,10 @@ static Proc* pick_next()
     // 如果没有 RUNNABLE 进程, 则返回idle
     return thiscpu->sched.idle_proc;
 }
+
+// 移除可能存在的调度定时器
+void acquire_sched() { cancel_cpu_timer(&sched_timer[cpuid()]); }
+void release_sched() { }
 
 // 接受调度 并将当前进程状态更新为new_state (需持有sched_lock)
 void sched(enum procstate new_state)
@@ -181,8 +184,8 @@ void sched(enum procstate new_state)
             // 切换到进程页表
             attach_pgdir(&next->pgdir);
 
-            // 重置调度定时器
-            // set_cpu_timer(&sched_timer[cpuid()]);
+            // 启用调度定时器
+            set_cpu_timer(&sched_timer[cpuid()]);
 
             // 切换进程上下文
             swtch(&this->kcontext, next->kcontext);
