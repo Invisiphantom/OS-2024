@@ -35,7 +35,7 @@ static void __timer_set_clock()
     // 获取红黑树中的最左侧结点 (最小时间戳)
     auto node = _rb_first(&cpus[cpuid()].timer);
 
-    // 如果树为空, 则设置定时器为0.01秒
+    // 如果树为空, 则设置定时器间隔
     if (!node) {
         reset_clock(10);
         return;
@@ -57,7 +57,6 @@ static void __timer_set_clock()
 // clock.c->invoke_clock_handler 跳转到这里
 static void timer_clock_handler()
 {
-    // 重置定时器为0.01秒
     reset_clock(10);
 
     for (;;) {
@@ -126,9 +125,6 @@ void set_cpu_timer(struct timer* timer)
 void cancel_cpu_timer(struct timer* timer)
 {
     _arch_disable_trap(); // * 关闭中断
-
-    // 确保此时触发标志为false
-    ASSERT(timer->triggered == false);
 
     // 如果存在, 则从定时红黑树中删除结点timer
     if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp))

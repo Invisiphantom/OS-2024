@@ -269,9 +269,8 @@ NO_RETURN void exit(int code)
 // 如果pid无效 (找不到进程)  则返回-1
 int kill(int pid)
 {
-
     // 确保不是root_proc和idle进程
-    ASSERT(pid > 1 + NCPU);
+    ASSERT(pid > NCPU + 1);
 
     // 从pid树中查找进程
     Proc pid_p = { .pid = pid };

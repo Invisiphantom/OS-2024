@@ -24,7 +24,7 @@ void init_sched()
 
     // 初始化调度定时器
     for (int i = 0; i < NCPU; i++) {
-        sched_timer[i].elapse = 20; // 间隔时间
+        sched_timer[i].elapse = 40; // 间隔时间
         sched_timer[i].handler = time_sched;
     }
 }
@@ -99,7 +99,7 @@ static Proc* pick_next()
         auto node_next = node->next;
         auto p = container_of(node, Proc, schinfo.sched_node);
 
-        if (p != this) {
+        if (p != this && p->state != RUNNING) {
             acquire_spinlock(&p->lock); // **
             if (p->state == RUNNABLE) {
                 // 将该进程 移动到 队列尾
@@ -132,7 +132,6 @@ void release_sched() { }
 // 接受调度 并将当前进程状态更新为new_state (需持有sched_lock)
 void sched(enum procstate new_state)
 {
-
     // 获取当前执行的进程
     Proc* this = thisproc();
     Proc* before;
@@ -159,6 +158,8 @@ void sched(enum procstate new_state)
 
         // 记录当前进程, 用于释放锁
         thiscpu->sched.before_proc = this;
+
+        // 切换到进程上下文
         attach_pgdir(&next->pgdir);
         swtch(&this->kcontext, next->kcontext);
 
@@ -172,7 +173,7 @@ void sched(enum procstate new_state)
             // 选择下一个进程 (获取锁)
             next = pick_next(); // **
 
-            // 如果还是idle进程, 则退出循环
+            // 如果还是idle进程, 则退出执行wfi
             if (next == this)
                 return;
 
