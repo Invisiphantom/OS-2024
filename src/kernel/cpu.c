@@ -67,7 +67,7 @@ static void timer_clock_handler()
         // 如果红黑树为空, 则退出
         if (node == NULL)
             break;
-        
+
         // 获取当前最小的定时器时间戳
         auto timer = container_of(node, struct timer, _node);
 
@@ -101,9 +101,12 @@ static void hello(struct timer* t)
 // 把timer挂载到CPU的定时红黑树上
 void set_cpu_timer(struct timer* timer)
 {
-    // 如果已经添加, 则直接返回
-    if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp))
+    // 如果已经添加, 则重置定时器
+    if (_rb_lookup(&timer->_node, &cpus[cpuid()].timer, __timer_cmp)) {
+        _rb_erase(&timer->_node, &cpus[cpuid()].timer);
+        set_cpu_timer(timer);
         return;
+    }
 
     // 清除触发标志
     timer->triggered = false;

@@ -74,9 +74,9 @@ bool _wait_sem(Semaphore* sem)
     // 将等待体 添加到 信号量的休眠链表 开始排队
     _insert_into_list(&sem->sleeplist, &wait->slnode);
 
-    acquire_sched_lock();         // 获取调度锁
     release_spinlock(&sem->lock); // 释放信号量锁
     sched(SLEEPING);              // 设置当前进程为休眠 并启用调度
+    release_sched_lock();         // 释放调度锁
     acquire_spinlock(&sem->lock); // 重新获取信号量锁
 
     // 如果不是被post_sem唤醒

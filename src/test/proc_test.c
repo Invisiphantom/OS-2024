@@ -8,7 +8,7 @@ void set_parent_to_this(Proc* proc);
 
 static Semaphore s1, s2, s3, s4, s5, s6;
 
-// #define DEBUG
+#define DEBUG
 
 static void proc_test_1b(u64 a)
 {

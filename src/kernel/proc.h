@@ -75,11 +75,13 @@ struct schinfo {
 
 // 进程结构体
 typedef struct Proc {
+    SpinLock lock; // 每个进程的锁
+
     bool killed; // 是否被终止
     bool idle;   // 是否为idle进程
 
     int pid;               // Process ID
-    struct rb_node_ _node; // pid红黑树结点
+    struct rb_node_ _node; // pid树结点
 
     int exitcode;         // 退出码
     enum procstate state; // 进程状态

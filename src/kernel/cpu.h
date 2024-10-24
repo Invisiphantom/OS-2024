@@ -8,6 +8,7 @@
 struct sched {
     Proc* proc;      // 当前CPU上运行的进程, 或者为空
     Proc* idle_proc; // 当前CPU专属idle进程
+    Proc* before_proc;  // 记录跳转到idle之前的进程
 };
 
 struct cpu {
