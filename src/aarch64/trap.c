@@ -48,7 +48,7 @@ void trap_global_handler(UserContext* context)
         }
     }
 
-    // TODO: 如果进程有终止标志，且即将返回到用户态 则执行exit(-1)
+    // 如果进程有终止标志，且即将返回到用户态 则执行exit(-1)
     auto spsr_mode = context->spsr_el1 & 0xF;
     if (p->killed && spsr_mode == 0)
         exit(-1);

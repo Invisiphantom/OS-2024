@@ -118,7 +118,7 @@ void user_proc_test()
         // 确保页表已分配
         ASSERT(p->pgdir.pt);
 
-        // TODO: 设置用户上下文 (用于中断返回)
+        // 设置用户上下文 (用于中断返回)
         p->ucontext->x0 = i;           // loop_start(i)
         p->ucontext->elr_el1 = EXTMEM; // loop.S
         p->ucontext->spsr_el1 = 0;     // EL0t

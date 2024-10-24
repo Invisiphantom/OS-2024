@@ -10,7 +10,6 @@
 #include <driver/memlayout.h>
 #include <kernel/pt.h>
 
-// #define DEBUG
 
 Proc root_proc;      // 初始init进程
 void kernel_entry(); // root_proc 进程跳转到这里
@@ -51,7 +50,7 @@ void init_kproc()
 // 初始化新分配的进程
 void init_proc(Proc* p)
 {
-    acquire_spinlock(&proc_lock);
+    acquire_spinlock(&proc_lock); // *
 
     p->killed = false;
     p->idle = false;
@@ -81,7 +80,7 @@ void init_proc(Proc* p)
     // 因为trap_ret会将ucontext加载完, 所以直接将sp_el0设置为用户栈底
     p->ucontext->sp_el0 = round_up((u64)p->ucontext, PAGE_SIZE);
 
-    release_spinlock(&proc_lock);
+    release_spinlock(&proc_lock); // *
 }
 
 Proc* create_proc()
@@ -89,13 +88,11 @@ Proc* create_proc()
     Proc* p = kalloc(sizeof(Proc));
     init_proc(p);
 
-#ifdef DEBUG
     // 打印每个新进程的信息 (FOR DEBUG)
     // addr:进程结构体地址  schnode:调度结点地址  ptnode:串在父进程链表上的结点地址
-    auto p_mask = (u64)p % 0x10000;
-    printk("pid=%d - addr=0x%p - schnode=0x%p - ptnode=0x%p\n", p->pid, (void*)p_mask,
-        (void*)(p_mask + 0x50), (void*)(p_mask + 0x38));
-#endif
+    // auto p_mask = (u64)p % 0x10000;
+    // printk("pid=%d - addr=0x%p - schnode=0x%p - ptnode=0x%p\n", p->pid, (void*)p_mask,
+    //     (void*)(p_mask + 0x50), (void*)(p_mask + 0x38));
 
     return p;
 }
@@ -103,20 +100,20 @@ Proc* create_proc()
 // 设置proc的父进程为thisproc
 void set_parent_to_this(Proc* proc)
 {
-    acquire_spinlock(&proc_lock);
+    acquire_spinlock(&proc_lock); // *
 
     auto p = thisproc();
     proc->parent = p;
     _insert_into_list(&p->children, &proc->ptnode);
 
-    release_spinlock(&proc_lock);
+    release_spinlock(&proc_lock); // *
 }
 
 // 配置进程的初始上下文指向 proc_entry(entry, arg)
 // 激活进程, 并将其添加到调度队列
 int start_proc(Proc* p, void (*entry)(u64), u64 arg)
 {
-    acquire_spinlock(&proc_lock);
+    acquire_spinlock(&proc_lock); // *
 
     // 如果进程没有父进程, 则将其父进程设置为root_proc
     if (p->parent == NULL) {
@@ -129,7 +126,7 @@ int start_proc(Proc* p, void (*entry)(u64), u64 arg)
     p->kcontext->x0 = (u64)entry;
     p->kcontext->x1 = (u64)arg;
 
-    release_spinlock(&proc_lock);
+    release_spinlock(&proc_lock); // *
 
     // 将进程状态设置为 RUNNABLE
     // 并将其添加到调度队列
@@ -143,7 +140,7 @@ int start_proc(Proc* p, void (*entry)(u64), u64 arg)
 // 保存退出状态到exitcode 并返回其pid
 int wait(int* exitcode)
 {
-    acquire_spinlock(&proc_lock);
+    acquire_spinlock(&proc_lock); // *
 
     // 如果没有子进程，则返回-1
     if (_empty_list(&thisproc()->children)) {
@@ -184,7 +181,7 @@ int wait(int* exitcode)
                 // 释放进程结构体
                 kfree(pp);
 
-                release_spinlock(&proc_lock);
+                release_spinlock(&proc_lock); // *
                 return pid;
             }
 
@@ -198,9 +195,9 @@ int wait(int* exitcode)
         }
 
         // 释放锁 并在sleeplist上休眠, 醒来时重新获取锁
-        release_spinlock(&proc_lock);
+        release_spinlock(&proc_lock); // *
         wait_sem(&p->childexit);
-        acquire_spinlock(&proc_lock);
+        acquire_spinlock(&proc_lock); // *
     }
 
     printk("wait: should not reach here");
@@ -250,12 +247,12 @@ NO_RETURN void exit(int code)
     PANIC();
 }
 
-// TODO: 遍历进程树, 终止进程
+// 遍历进程树, 终止进程
 // 设置进程的终止标志位, 并返回0
 // 如果pid无效 (找不到进程)  则返回-1
 int kill(int pid)
 {
-    acquire_spinlock(&proc_lock);
+    acquire_spinlock(&proc_lock); // *
 
     // 确保不是root_proc和idle进程
     ASSERT(pid > 1 + NCPU);
@@ -273,7 +270,7 @@ int kill(int pid)
     // 设置进程的终止标志位
     p->killed = true;
 
-    release_spinlock(&proc_lock);
+    release_spinlock(&proc_lock); // *
 
     // 唤醒如果在睡眠的进程
     activate_proc(p);
