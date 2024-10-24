@@ -9,7 +9,6 @@
 extern bool panic_flag;
 extern SpinLock proc_lock;
 
-static SpinLock sched_lock; // 调度函数锁
 static Queue sched_queue;   // 调度队列
 
 // 调度定时器
@@ -21,7 +20,6 @@ extern void swtch(KernelContext** old_ctx, KernelContext* new_ctx);
 // 初始化调度器
 void init_sched()
 {
-    init_spinlock(&sched_lock); // 初始化调度锁
     queue_init(&sched_queue);   // 初始化调度队列
 
     // 初始化调度定时器
@@ -38,8 +36,8 @@ void init_schinfo(struct schinfo* p) { return; }
 Proc* thisproc() { return thiscpu->sched.proc; }
 
 // 调用schd()之前, 需要获取sched_lock
-void acquire_sched_lock() { acquire_spinlock(&sched_lock); }
-void release_sched_lock() { release_spinlock(&sched_lock); }
+void acquire_sched_lock() { }
+void release_sched_lock() { }
 
 // 唤醒进程
 // 如果进程状态是 RUNNING/RUNNABLE: 什么都不做
@@ -135,12 +133,11 @@ static void update_this_proc(Proc* p)
 // 接受调度 并将当前进程状态更新为new_state (需持有sched_lock)
 void sched(enum procstate new_state)
 {
-    acquire_spinlock(&proc_lock);
 
     // 获取当前执行的进程
     Proc* this = thisproc();
 
-    // 如果当前进程带有killed标记, 且new state不为zombie, 则调度器直接返回
+    // 如果有终止标记, 且新状态不为ZOMBIE, 则调度器直接返回
     if (this->killed && new_state != ZOMBIE) {
         release_spinlock(&proc_lock);
         return;
@@ -148,6 +145,8 @@ void sched(enum procstate new_state)
 
     // 确保当前进程是 RUNNING 状态
     ASSERT(this->state == RUNNING);
+
+    acquire_spinlock(&proc_lock);
 
     // 更新当前进程状态为 new_state
     update_this_state(new_state);
@@ -164,8 +163,6 @@ void sched(enum procstate new_state)
     // 切换到下一个进程
     next->state = RUNNING;
 
-    release_spinlock(&proc_lock);
-
     // 由进程负责释放锁 并在返回到调度器之前重新获取锁
     // 将旧上下文压栈 并用this->kcontext保存sp
     // 然后从next->kcontext的sp加载新上下文
@@ -177,14 +174,14 @@ void sched(enum procstate new_state)
     }
 
     // 释放调度锁
-    release_sched_lock();
+    release_spinlock(&proc_lock);
 }
 
 // proc.c->start_proc 配置进程入口到这里
 u64 proc_entry(void (*entry)(u64), u64 arg)
 {
     // 释放调度锁
-    release_sched_lock();
+    release_spinlock(&proc_lock);
 
     // 设置返回地址为entry
     set_return_addr(entry);
